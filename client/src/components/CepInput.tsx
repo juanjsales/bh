@@ -33,6 +33,8 @@ export default function CepInput({ onComplete }: { onComplete: () => void }) {
         cidade: data.localidade,
         uf: data.uf,
       });
+      // Avança a etapa do quiz após completar o CEP
+      useQuizStore.getState().avancarEtapa();
       onComplete();
     } catch (error) {
       toast.error("Erro ao buscar CEP");

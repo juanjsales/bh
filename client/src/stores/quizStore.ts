@@ -54,7 +54,7 @@ export const useQuizStore = create<QuizState>((set, get) => ({
   tipo_compra: null,
   categoria_calculada: null,
   etapa_atual: 0,
-  total_etapas: 5, // Ajustar conforme necessário
+  total_etapas: 6, // 1 (cadastro) + 1 (CEP) + 4 (perguntas do quiz) = 6 etapas
   
   iniciarQuiz: () => {
     set({

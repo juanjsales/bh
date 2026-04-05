@@ -136,6 +136,11 @@ export default function Quiz() {
   const [etapaFluxo, setEtapaFluxo] = useState<"cadastro" | "cep" | "quiz">("cadastro");
 
   useEffect(() => {
+    // Inicializa o quiz se não estiver autenticado ou se o quizId não estiver definido
+    if (!isAuthenticated || !quizStore.quizId) {
+      quizStore.iniciarQuiz();
+    }
+
     if (isAuthenticated && user) {
       setUserDataForm({
         nome: user.nome_completo || "",
@@ -143,16 +148,17 @@ export default function Quiz() {
         whatsapp: (user as any).whatsapp || "",
         senha: "",
       });
-      
-      if (quizStore.endereco) {
+
+      if (quizStore.endereco && etapaFluxo !== "quiz") {
         setEtapaFluxo("quiz");
-      } else {
+        quizStore.avancarEtapa(); // Avança para a primeira pergunta do quiz
+      } else if (!quizStore.endereco && etapaFluxo !== "cep") {
         setEtapaFluxo("cep");
       }
-    } else {
+    } else if (!isAuthenticated && etapaFluxo !== "cadastro") {
       setEtapaFluxo("cadastro");
     }
-  }, [isAuthenticated, user, quizStore.endereco]);
+  }, [isAuthenticated, user, quizStore, etapaFluxo]);
 
   const salvarRespostasMutation = trpc.quiz.salvarRespostas.useMutation();
 
@@ -160,19 +166,14 @@ export default function Quiz() {
   const isQuizStep = etapaFluxo === "quiz" && !isFinalStep;
   const currentQuestion = isQuizStep ? QUIZ_QUESTIONS[currentQuestionIndex] : null;
   
-  const etapaAtual = isQuizStep ? currentQuestion!.etapa : (isFinalStep ? 6 : 1);
-  const etapaInfo = ETAPAS[etapaAtual - 1];
+  // Ajusta a etapa atual para considerar as etapas de cadastro e CEP
+  const etapaAtualDisplay = etapaFluxo === "cadastro" ? 1 : (etapaFluxo === "cep" ? 1 : quizStore.etapa_atual);
+  const etapaInfo = ETAPAS[etapaAtualDisplay - 1];
   
-  const questoesEtapa = isQuizStep ? QUIZ_QUESTIONS.filter((q) => q.etapa === etapaAtual) : [];
+  const questoesEtapa = isQuizStep ? QUIZ_QUESTIONS.filter((q) => q.etapa === quizStore.etapa_atual) : [];
   const progresso = etapaFluxo === "cadastro" ? 0 : (etapaFluxo === "cep" ? 10 : (isFinalStep ? 100 : ((currentQuestionIndex + 1) / QUIZ_QUESTIONS.length) * 90 + 10));
 
-  useEffect(() => {
-    console.log("Quiz acessado. Autenticado:", isAuthenticated);
-  }, [isAuthenticated, setLocation]);
-
-  const handleCepComplete = () => {
-    setShowCep(false);
-  };
+  // Removido handleCepComplete pois a lógica foi movida para o useEffect e onComplete do CepInput
 
   const handleResposta = async (valor: any) => {
     const novasRespostas = { ...respostas, [currentQuestion.id]: valor };
