@@ -1,5 +1,5 @@
 import { getDb } from "../db";
-import { whatsapp_logs, pedidos, utilizadores, produtos } from "../../drizzle/schema";
+import { whatsappLogs, pedidos, utilizadores, produtos } from "../../drizzle/schema";
 import { v4 as uuidv4 } from "uuid";
 import { eq } from "drizzle-orm";
 
@@ -54,15 +54,15 @@ export const whatsappService = {
     const pedido = await db
       .select({
         id: pedidos.id,
-        utilizador_id: pedidos.utilizador_id,
-        valor_total: pedidos.valor_total,
+        utilizadorId: pedidos.utilizadorId,
+        valorTotal: pedidos.valorTotal,
         telefone: utilizadores.telefone,
-        nome_completo: utilizadores.nome_completo,
-        produto_nome: produtos.nome,
+        nomeCompleto: utilizadores.nomeCompleto,
+        produtoNome: produtos.nome,
       })
       .from(pedidos)
-      .innerJoin(utilizadores, eq(pedidos.utilizador_id, utilizadores.id))
-      .innerJoin(produtos, eq(pedidos.produto_id, produtos.id))
+      .innerJoin(utilizadores, eq(pedidos.utilizadorId, utilizadores.id))
+      .innerJoin(produtos, eq(pedidos.produtoId, produtos.id))
       .where(eq(pedidos.id, pedidoId))
       .limit(1) as any[];
 
@@ -82,15 +82,15 @@ export const whatsappService = {
 
     // Registrar log
     const logId = uuidv4();
-    await db.insert(whatsapp_logs).values({
+    await db.insert(whatsappLogs).values({
       id: logId,
-      utilizador_id: p.utilizador_id,
-      pedido_id: pedidoId,
+      utilizadorId: p.utilizadorId,
+      pedidoId: pedidoId,
       telefone: telefoneFmt,
-      tipo: "pagamento_pendente",
+      tipoWhatsapp: "pagamento_pendente",
       mensagem: mensagem.corpo,
-      status: "enviado",
-      criado_em: new Date(),
+      statusWhatsapp: "enviado",
+      criadoEm: new Date(),
     });
 
     // TODO: Integrar com WhatsApp Business API para envio real

@@ -280,21 +280,21 @@ export default function Perfil() {
                         Pedido #{pedido.id}
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        {new Date(pedido.criado_em).toLocaleDateString("pt-BR")}
+                        {new Date(pedido.criadoEm).toLocaleDateString("pt-BR")}
                       </p>
                     </div>
                     <div className="flex items-center gap-4">
                       <span
                         className={`px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1 ${getStatusColor(
-                          pedido.status_pagamento
+                          pedido.statusPagamento
                         )}`}
                       >
-                        {getStatusIcon(pedido.status_pagamento)}
-                        {pedido.status_pagamento.charAt(0).toUpperCase() +
-                          pedido.status_pagamento.slice(1)}
+                        {getStatusIcon(pedido.statusPagamento)}
+                        {pedido.statusPagamento.charAt(0).toUpperCase() +
+                          pedido.statusPagamento.slice(1)}
                       </span>
                       <p className="font-bold text-foreground">
-                        R$ {(parseFloat(pedido.valor_total) / 100).toFixed(2)}
+                        R$ {parseFloat(pedido.valorTotal).toFixed(2)}
                       </p>
                       {expandedPedido === pedido.id ? (
                         <ChevronUp className="w-5 h-5" />
@@ -310,7 +310,7 @@ export default function Perfil() {
                         <div>
                           <p className="text-muted-foreground">Tipo</p>
                           <p className="font-medium text-foreground">
-                            {pedido.tipo_compra === "avulsa"
+                            {pedido.tipoCompra === "avulsa"
                               ? "Compra Avulsa"
                               : "Assinatura"}
                           </p>
@@ -318,7 +318,7 @@ export default function Perfil() {
                         <div>
                           <p className="text-muted-foreground">Status</p>
                           <p className="font-medium text-foreground">
-                            {pedido.status_envio || "Não enviado"}
+                            {pedido.statusEnvio || "Não enviado"}
                           </p>
                         </div>
                       </div>

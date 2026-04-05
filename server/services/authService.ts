@@ -26,11 +26,11 @@ export async function loginLocal(email: string, senha: string) {
   }
 
   const usuario = user[0];
-  if (!usuario.senha_hash) {
+  if (!usuario.senhaHash) {
     throw new TRPCError({ code: "UNAUTHORIZED", message: "Email ou senha incorretos" });
   }
 
-  const senhaValida = await bcrypt.compare(senha, usuario.senha_hash);
+  const senhaValida = await bcrypt.compare(senha, usuario.senhaHash);
   if (!senhaValida) {
     throw new TRPCError({ code: "UNAUTHORIZED", message: "Email ou senha incorretos" });
   }
@@ -61,8 +61,8 @@ export async function registerLocal(email: string, senha: string, nome_completo:
   try {
     result = await db.insert(utilizadores).values({
       email,
-      nome_completo,
-      senha_hash: senhaHash,
+      nomeCompleto: nome_completo,
+      senhaHash: senhaHash,
       role: "cliente",
     });
   } catch (error) {

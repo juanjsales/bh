@@ -46,7 +46,7 @@ export default function AdminPedidos() {
 
   const pedidosFiltrados = pedidosQuery.data?.filter((pedido: any) => {
     if (filtroStatus === "todos") return true;
-    return pedido.status_pagamento === filtroStatus;
+    return pedido.statusPagamento === filtroStatus;
   });
 
   const getStatusIcon = (status: StatusPagamento) => {
@@ -113,21 +113,21 @@ export default function AdminPedidos() {
             onClick={() => setFiltroStatus("pendente")}
             size="sm"
           >
-            Pendentes ({pedidosQuery.data?.filter((p: any) => p.status_pagamento === "pendente").length || 0})
+            Pendentes ({pedidosQuery.data?.filter((p: any) => p.statusPagamento === "pendente").length || 0})
           </Button>
           <Button
             variant={filtroStatus === "pago" ? "default" : "outline"}
             onClick={() => setFiltroStatus("pago")}
             size="sm"
           >
-            Pagos ({pedidosQuery.data?.filter((p: any) => p.status_pagamento === "pago").length || 0})
+            Pagos ({pedidosQuery.data?.filter((p: any) => p.statusPagamento === "pago").length || 0})
           </Button>
           <Button
             variant={filtroStatus === "cancelado" ? "default" : "outline"}
             onClick={() => setFiltroStatus("cancelado")}
             size="sm"
           >
-            Cancelados ({pedidosQuery.data?.filter((p: any) => p.status_pagamento === "cancelado").length || 0})
+            Cancelados ({pedidosQuery.data?.filter((p: any) => p.statusPagamento === "cancelado").length || 0})
           </Button>
         </div>
 
@@ -163,21 +163,21 @@ export default function AdminPedidos() {
 
                     <div>
                       <p className="text-sm text-muted-foreground">Valor</p>
-                      <p className="font-bold text-accent">R$ {parseFloat(pedido.valor_total).toFixed(2)}</p>
+                      <p className="font-bold text-accent">R$ {parseFloat(pedido.valorTotal).toFixed(2)}</p>
                     </div>
 
                     <div>
                       <p className="text-sm text-muted-foreground">Status</p>
-                      <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(pedido.status_pagamento)}`}>
-                        {getStatusIcon(pedido.status_pagamento)}
-                        {getStatusLabel(pedido.status_pagamento)}
+                      <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(pedido.statusPagamento)}`}>
+                        {getStatusIcon(pedido.statusPagamento)}
+                        {getStatusLabel(pedido.statusPagamento)}
                       </div>
                     </div>
 
                     <div className="text-right">
                       <p className="text-sm text-muted-foreground">Data</p>
                       <p className="text-sm text-foreground">
-                        {new Date(pedido.criado_em).toLocaleDateString("pt-BR")}
+                        {new Date(pedido.criadoEm).toLocaleDateString("pt-BR")}
                       </p>
                     </div>
                   </div>
@@ -193,7 +193,7 @@ export default function AdminPedidos() {
                             <div>
                               <span className="text-muted-foreground">Tipo de Compra:</span>
                               <p className="font-medium text-foreground capitalize">
-                                {pedido.tipo_compra === "avulsa" ? "Avulsa" : "Assinatura"}
+                                {pedido.tipoCompra === "avulsa" ? "Avulsa" : "Assinatura"}
                               </p>
                             </div>
                             <div>
@@ -203,7 +203,7 @@ export default function AdminPedidos() {
                             <div>
                               <span className="text-muted-foreground">Criado em:</span>
                               <p className="font-medium text-foreground">
-                                {new Date(pedido.criado_em).toLocaleString("pt-BR")}
+                                {new Date(pedido.criadoEm).toLocaleString("pt-BR")}
                               </p>
                             </div>
                           </div>
@@ -230,7 +230,7 @@ export default function AdminPedidos() {
                         <h4 className="font-semibold text-foreground mb-3">Atualizar Status de Pagamento</h4>
                         <div className="flex gap-2 flex-wrap">
                           <Button
-                            variant={pedido.status_pagamento === "pendente" ? "default" : "outline"}
+                            variant={pedido.statusPagamento === "pendente" ? "default" : "outline"}
                             size="sm"
                             onClick={(e) => {
                 e.stopPropagation();
@@ -242,7 +242,7 @@ export default function AdminPedidos() {
                             Pendente
                           </Button>
                           <Button
-                            variant={pedido.status_pagamento === "pago" ? "default" : "outline"}
+                            variant={pedido.statusPagamento === "pago" ? "default" : "outline"}
                             size="sm"
                             onClick={(e) => {
                 e.stopPropagation();
@@ -254,7 +254,7 @@ export default function AdminPedidos() {
                             Marcar como Pago
                           </Button>
                           <Button
-                            variant={pedido.status_pagamento === "cancelado" ? "default" : "outline"}
+                            variant={pedido.statusPagamento === "cancelado" ? "default" : "outline"}
                             size="sm"
                             onClick={(e) => {
                 e.stopPropagation();

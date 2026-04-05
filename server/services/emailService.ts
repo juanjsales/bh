@@ -1,5 +1,5 @@
 import { getDb } from "../db";
-import { email_logs, pedidos, utilizadores, produtos } from "../../drizzle/schema";
+import { emailLogs, pedidos, utilizadores, produtos } from "../../drizzle/schema";
 import { v4 as uuidv4 } from "uuid";
 import { eq } from "drizzle-orm";
 
@@ -29,17 +29,17 @@ export const emailService = {
     const pedido = await db
       .select({
         id: pedidos.id,
-        utilizador_id: pedidos.utilizador_id,
-        valor_total: pedidos.valor_total,
-        tipo_compra: pedidos.tipo_compra,
-        criado_em: pedidos.criado_em,
-        nome_completo: utilizadores.nome_completo,
+        utilizadorId: pedidos.utilizadorId,
+        valorTotal: pedidos.valorTotal,
+        tipoCompra: pedidos.tipoCompra,
+        criadoEm: pedidos.criadoEm,
+        nomeCompleto: utilizadores.nomeCompleto,
         email: utilizadores.email,
-        produto_nome: produtos.nome,
+        produtoNome: produtos.nome,
       })
       .from(pedidos)
-      .innerJoin(utilizadores, eq(pedidos.utilizador_id, utilizadores.id))
-      .innerJoin(produtos, eq(pedidos.produto_id, produtos.id))
+      .innerJoin(utilizadores, eq(pedidos.utilizadorId, utilizadores.id))
+      .innerJoin(produtos, eq(pedidos.produtoId, produtos.id))
       .where(eq(pedidos.id, pedidoId))
       .limit(1) as any[];
 
@@ -52,15 +52,15 @@ export const emailService = {
 
     // Registrar log de email
     const logId = uuidv4();
-    await db.insert(email_logs).values({
+    await db.insert(emailLogs).values({
       id: logId,
-      utilizador_id: p.utilizador_id,
-      pedido_id: pedidoId,
-      tipo: "confirmacao_pedido",
+      utilizadorId: p.utilizadorId,
+      pedidoId: pedidoId,
+      tipoEmail: "confirmacao_pedido",
       destinatario: p.email,
       assunto: template.assunto,
-      status: "enviado",
-      criado_em: new Date(),
+      statusEmail: "enviado",
+      criadoEm: new Date(),
     });
 
     // TODO: Integrar com SendGrid/Mailgun para envio real
@@ -79,13 +79,13 @@ export const emailService = {
     // Buscar pedido
     const pedido = await db
       .select({
-        utilizador_id: pedidos.utilizador_id,
+        utilizadorId: pedidos.utilizadorId,
         email: utilizadores.email,
-        nome_completo: utilizadores.nome_completo,
-        codigo_rastreio: pedidos.codigo_rastreio,
+        nomeCompleto: utilizadores.nomeCompleto,
+        codigoRastreio: pedidos.codigoRastreio,
       })
       .from(pedidos)
-      .innerJoin(utilizadores, eq(pedidos.utilizador_id, utilizadores.id))
+      .innerJoin(utilizadores, eq(pedidos.utilizadorId, utilizadores.id))
       .where(eq(pedidos.id, pedidoId))
       .limit(1) as any[];
 
@@ -98,15 +98,15 @@ export const emailService = {
 
     // Registrar log
     const logId = uuidv4();
-    await db.insert(email_logs).values({
+    await db.insert(emailLogs).values({
       id: logId,
-      utilizador_id: p.utilizador_id,
-      pedido_id: pedidoId,
-      tipo: "status_entrega",
+      utilizadorId: p.utilizadorId,
+      pedidoId: pedidoId,
+      tipoEmail: "status_entrega",
       destinatario: p.email,
       assunto: template.assunto,
-      status: "enviado",
-      criado_em: new Date(),
+      statusEmail: "enviado",
+      criadoEm: new Date(),
     });
 
     console.log(`[Email] Status enviado para ${p.email}`);
@@ -146,14 +146,14 @@ export const emailService = {
 
     // Registrar log
     const logId = uuidv4();
-    await db.insert(email_logs).values({
+    await db.insert(emailLogs).values({
       id: logId,
-      utilizador_id: utilizadorId,
-      tipo: "recomendacao",
+      utilizadorId: utilizadorId,
+      tipoEmail: "recomendacao",
       destinatario: usuario[0].email,
       assunto: template.assunto,
-      status: "enviado",
-      criado_em: new Date(),
+      statusEmail: "enviado",
+      criadoEm: new Date(),
     });
 
     console.log(`[Email] Recomendação enviada para ${usuario[0].email}`);
@@ -244,14 +244,14 @@ export const emailService = {
     const db = await getDb();
     if (!db) throw new Error("Database not available");
 
-    let query = db.select().from(email_logs);
+    let query = db.select().from(emailLogs);
 
     if (utilizadorId) {
-      query = query.where(eq(email_logs.utilizador_id, utilizadorId)) as any;
+      query = query.where(eq(emailLogs.utilizadorId, utilizadorId)) as any;
     }
 
     const logs = await (query as any)
-      .orderBy(email_logs.criado_em)
+      .orderBy(emailLogs.criadoEm)
       .limit(limite);
 
     return logs;
@@ -264,7 +264,7 @@ export const emailService = {
     const db = await getDb();
     if (!db) throw new Error("Database not available");
 
-    const logs = await db.select().from(email_logs);
+    const logs = await db.select().from(emailLogs);
 
     const stats = {
       total: logs.length,

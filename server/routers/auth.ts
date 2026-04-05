@@ -25,15 +25,17 @@ export const authRouter = router({
       console.log(`[Auth] Tentativa de login local para: ${input.email}`);
       const usuario = await loginLocal(input.email, input.senha);
       
-      console.log(`[Auth] Usuário encontrado: ${usuario.email}, ID: ${usuario.id}, OpenID: ${usuario.openId}`);
+      const tokenOpenId = usuario.openId || String(usuario.id);
+      console.log(`[Auth] Usuário encontrado: ${usuario.email}, ID: ${usuario.id}, OpenID: ${usuario.openId}, tokenOpenId: ${tokenOpenId}`);
 
       // DEBUG: Forçando o uso de um token no formato que o verifySession espera
       // A estrutura esperada pelo verifySession é: { openId, appId, name }
-      const sessionToken = await sdk.createSessionToken(usuario.openId, {
-        name: usuario.nome_completo || "",
+      const sessionName = usuario.nome_completo || usuario.email || "Usuário";
+      const sessionToken = await sdk.createSessionToken(tokenOpenId, {
+        name: sessionName,
       });
 
-      console.log(`[Auth] Token gerado manualmente para openId: ${usuario.openId}. Token: ${sessionToken}`);
+      console.log(`[Auth] Token gerado manualmente para openId: ${tokenOpenId}. Token: ${sessionToken}`);
       
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: 604800000 });

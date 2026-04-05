@@ -4,7 +4,7 @@
  */
 
 import { getDb } from "../db";
-import { perfis_quiz } from "../../drizzle/schema";
+import { perfisQuiz } from "../../drizzle/schema";
 import { eq } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
@@ -80,17 +80,17 @@ export async function salvarPerfilQuiz(
 
   const perfilId = uuidv4();
 
-  await db.insert(perfis_quiz).values({
+  await db.insert(perfisQuiz).values({
     id: perfilId,
-    utilizador_id: utilizadorId,
-    respostas_brutas: JSON.stringify(respostas),
-    respostas_pessoais: respostasPessoais ? JSON.stringify(respostasPessoais) : null,
-    respostas_emocionais: respostasEmocionais ? JSON.stringify(respostasEmocionais) : null,
-    categoria_calculada: categoria,
-    cliente_nome: cliente_nome,
-    cliente_email: cliente_email,
-    cliente_whatsapp: cliente_whatsapp,
-    cliente_cep: cliente_cep,
+    utilizadorId: utilizadorId,
+    respostasBrutas: JSON.stringify(respostas),
+    respostasPessoais: respostasPessoais ? JSON.stringify(respostasPessoais) : null,
+    respostasEmocionais: respostasEmocionais ? JSON.stringify(respostasEmocionais) : null,
+    categoriaCalculada: categoria,
+    clienteNome: cliente_nome,
+    clienteEmail: cliente_email,
+    clienteWhatsapp: cliente_whatsapp,
+    clienteCep: cliente_cep,
   } as any);
 
   return perfilId;
@@ -107,9 +107,9 @@ export async function obterPerfilQuizRecente(utilizadorId: number) {
 
   const perfil = await db
     .select()
-    .from(perfis_quiz)
-    .where(eq(perfis_quiz.utilizador_id, utilizadorId))
-    .orderBy((t) => t.criado_em)
+    .from(perfisQuiz)
+    .where(eq(perfisQuiz.utilizadorId, utilizadorId))
+    .orderBy((t) => t.criadoEm)
     .limit(1);
 
   return perfil.length > 0 ? perfil[0] : null;

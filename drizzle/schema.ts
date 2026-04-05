@@ -1,199 +1,159 @@
-import {
-  pgTable,
-  pgEnum,
-  serial,
-  varchar,
-  text,
-  timestamp,
-  json,
-  decimal,
-  boolean,
-  integer,
-} from "drizzle-orm/pg-core";
+import { pgTable, varchar, integer, timestamp, text, numeric, json, boolean, unique, serial, pgEnum } from "drizzle-orm/pg-core"
+import { sql } from "drizzle-orm"
 
-// Enums
-export const roleEnum = pgEnum("role", ["cliente", "admin"]);
-export const tipoCompraEnum = pgEnum("tipo_compra", ["avulsa", "assinatura"]);
-export const statusPagamentoEnum = pgEnum("status_pagamento", ["pendente", "pago", "cancelado"]);
-export const statusEnvioEnum = pgEnum("status_envio", ["preparando", "enviado", "entregue"]);
-export const statusAssinaturaEnum = pgEnum("status", ["ativa", "pausada", "cancelada"]);
-export const statusPixEnum = pgEnum("status_pix", ["pendente", "confirmado", "expirado", "rejeitado"]);
-export const tipoEmailEnum = pgEnum("tipo_email", ["confirmacao_pedido", "status_entrega", "recomendacao", "outro"]);
-export const statusEmailEnum = pgEnum("status_email", ["enviado", "falha", "bounce", "spam"]);
-export const tipoWhatsappEnum = pgEnum("tipo_whatsapp", ["pagamento_pendente", "pagamento_confirmado", "entrega", "outro"]);
-export const statusWhatsappEnum = pgEnum("status_whatsapp", ["enviado", "falha", "entregue", "lido"]);
+export const role = pgEnum("role", ['cliente', 'admin'])
+export const status = pgEnum("status", ['ativa', 'pausada', 'cancelada'])
+export const statusEmail = pgEnum("status_email", ['enviado', 'falha', 'bounce', 'spam'])
+export const statusEnvio = pgEnum("status_envio", ['preparando', 'enviado', 'entregue'])
+export const statusPagamento = pgEnum("status_pagamento", ['pendente', 'pago', 'cancelado'])
+export const statusPix = pgEnum("status_pix", ['pendente', 'confirmado', 'expirado', 'rejeitado'])
+export const statusWhatsapp = pgEnum("status_whatsapp", ['enviado', 'falha', 'entregue', 'lido'])
+export const tipoCompra = pgEnum("tipo_compra", ['avulsa', 'assinatura'])
+export const tipoEmail = pgEnum("tipo_email", ['confirmacao_pedido', 'status_entrega', 'recomendacao', 'outro'])
+export const tipoWhatsapp = pgEnum("tipo_whatsapp", ['pagamento_pendente', 'pagamento_confirmado', 'entrega', 'outro'])
 
-/**
- * TABELA: utilizadores (Identidade e RBAC)
- */
-export const utilizadores = pgTable("utilizadores", {
-  id: serial("id").primaryKey(),
-  openId: varchar("openId", { length: 64 }).unique(),
-  nome_completo: text("nome_completo"),
-  email: varchar("email", { length: 320 }).unique(),
-  senha_hash: text("senha_hash"),
-  telefone: varchar("telefone", { length: 20 }),
-  endereco_completo: text("endereco_completo"),
-  role: roleEnum("role").default("cliente").notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
-});
 
-export type Utilizador = typeof utilizadores.$inferSelect;
-export type InsertUtilizador = typeof utilizadores.$inferInsert;
-
-/**
- * TABELA: perfis_quiz (Diagnóstico Emocional)
- */
-export const perfis_quiz = pgTable("perfis_quiz", {
-  id: varchar("id", { length: 36 }).primaryKey(),
-  utilizador_id: integer("utilizador_id").notNull(),
-  respostas_brutas: json("respostas_brutas").$type<Record<string, any>>().notNull(),
-  categoria_calculada: text("categoria_calculada").notNull(),
-  criado_em: timestamp("criado_em").defaultNow().notNull(),
-  cliente_nome: text("cliente_nome"),
-  cliente_email: varchar("cliente_email", { length: 320 }),
-  cliente_whatsapp: varchar("cliente_whatsapp", { length: 20 }),
-  cliente_cep: varchar("cliente_cep", { length: 10 }),
-  cliente_logradouro: text("cliente_logradouro"),
-  cliente_numero: text("cliente_numero"),
-  cliente_complemento: text("cliente_complemento"),
-  cliente_bairro: text("cliente_bairro"),
-  cliente_cidade: text("cliente_cidade"),
-  cliente_estado: varchar("cliente_estado", { length: 2 }),
-  respostas_pessoais: json("respostas_pessoais").$type<Record<string, any>>(),
-  respostas_emocionais: json("respostas_emocionais").$type<Record<string, any>>(),
-});
-
-/**
- * TABELA: produtos (Catálogo Fixo)
- */
-export const produtos = pgTable("produtos", {
-  id: varchar("id", { length: 36 }).primaryKey(),
-  nome: text("nome").notNull(),
-  descricao: text("descricao"),
-  preco_avulso: decimal("preco_avulso", { precision: 10, scale: 2 }).notNull(),
-  preco_assinatura: decimal("preco_assinatura", { precision: 10, scale: 2 }),
-  ativo: boolean("ativo").default(true).notNull(),
-  imagem_url: text("imagem_url"),
-  categoria: text("categoria"),
-  criado_em: timestamp("criado_em").defaultNow().notNull(),
-  atualizado_em: timestamp("atualizado_em").defaultNow().notNull(),
-});
-
-/**
- * TABELA: pedidos (Nó Transacional Central) 🎯
- */
-export const pedidos = pgTable("pedidos", {
-  id: varchar("id", { length: 36 }).primaryKey(),
-  utilizador_id: integer("utilizador_id").notNull(),
-  produto_id: varchar("produto_id", { length: 36 }).notNull(),
-  tipo_compra: tipoCompraEnum("tipo_compra").notNull(),
-  status_pagamento: statusPagamentoEnum("status_pagamento").default("pendente").notNull(),
-  status_envio: statusEnvioEnum("status_envio").default("preparando").notNull(),
-  codigo_rastreio: varchar("codigo_rastreio", { length: 50 }),
-  valor_total: decimal("valor_total", { precision: 10, scale: 2 }).notNull(),
-  frete_valor: decimal("frete_valor", { precision: 10, scale: 2 }),
-  endereco_rua: text("endereco_rua"),
-  endereco_numero: text("endereco_numero"),
-  endereco_complemento: text("endereco_complemento"),
-  endereco_bairro: text("endereco_bairro"),
-  endereco_cidade: text("endereco_cidade"),
-  endereco_estado: varchar("endereco_estado", { length: 2 }),
-  endereco_cep: varchar("endereco_cep", { length: 10 }),
-  criado_em: timestamp("criado_em").defaultNow().notNull(),
-  atualizado_em: timestamp("atualizado_em").defaultNow().notNull(),
-});
-
-/**
- * TABELA: assinaturas (Motor de Recorrência)
- */
 export const assinaturas = pgTable("assinaturas", {
-  id: varchar("id", { length: 36 }).primaryKey(),
-  utilizador_id: integer("utilizador_id").notNull(),
-  produto_id: varchar("produto_id", { length: 36 }).notNull(),
-  pedido_origem_id: varchar("pedido_origem_id", { length: 36 }).notNull(),
-  status: statusAssinaturaEnum("status").default("ativa").notNull(),
-  proxima_cobranca: timestamp("proxima_cobranca").notNull(),
-  criada_em: timestamp("criada_em").defaultNow().notNull(),
-  atualizada_em: timestamp("atualizada_em").defaultNow().notNull(),
+	id: varchar({ length: 36 }).primaryKey().notNull(),
+	utilizadorId: integer("utilizador_id").notNull(),
+	produtoId: varchar("produto_id", { length: 36 }).notNull(),
+	pedidoOrigemId: varchar("pedido_origem_id", { length: 36 }).notNull(),
+	status: status().default('ativa').notNull(),
+	proximaCobranca: timestamp("proxima_cobranca", { mode: 'string' }).notNull(),
+	criadaEm: timestamp("criada_em", { mode: 'string' }).defaultNow().notNull(),
+	atualizadaEm: timestamp("atualizada_em", { mode: 'string' }).defaultNow().notNull(),
 });
 
-/**
- * TABELA: carrinho (Carrinho de Compras)
- */
 export const carrinho = pgTable("carrinho", {
-  id: varchar("id", { length: 36 }).primaryKey(),
-  utilizador_id: integer("utilizador_id").notNull(),
-  produto_id: varchar("produto_id", { length: 36 }).notNull(),
-  quantidade: integer("quantidade").default(1).notNull(),
-  tipo_compra: tipoCompraEnum("tipo_compra").default("avulsa").notNull(),
-  criado_em: timestamp("criado_em").defaultNow().notNull(),
-  atualizado_em: timestamp("atualizado_em").defaultNow().notNull(),
+	id: varchar({ length: 36 }).primaryKey().notNull(),
+	utilizadorId: integer("utilizador_id").notNull(),
+	produtoId: varchar("produto_id", { length: 36 }).notNull(),
+	quantidade: integer().default(1).notNull(),
+	tipoCompra: tipoCompra("tipo_compra").default('avulsa').notNull(),
+	criadoEm: timestamp("criado_em", { mode: 'string' }).defaultNow().notNull(),
+	atualizadoEm: timestamp("atualizado_em", { mode: 'string' }).defaultNow().notNull(),
 });
 
-/**
- * TABELA: pagamentos_pix
- */
-export const pagamentos_pix = pgTable("pagamentos_pix", {
-  id: varchar("id", { length: 36 }).primaryKey(),
-  pedido_id: varchar("pedido_id", { length: 36 }).notNull(),
-  utilizador_id: integer("utilizador_id").notNull(),
-  valor: decimal("valor", { precision: 10, scale: 2 }).notNull(),
-  chave_pix: text("chave_pix").notNull(),
-  qr_code_base64: text("qr_code_base64"),
-  status: statusPixEnum("status_pix").default("pendente").notNull(),
-  comprovante_url: text("comprovante_url"),
-  motivo_rejeicao: text("motivo_rejeicao"),
-  validado_por: integer("validado_por"),
-  criado_em: timestamp("criado_em").defaultNow().notNull(),
-  atualizado_em: timestamp("atualizado_em").defaultNow().notNull(),
-  expira_em: timestamp("expira_em"),
+export const emailLogs = pgTable("email_logs", {
+	id: varchar({ length: 36 }).primaryKey().notNull(),
+	utilizadorId: integer("utilizador_id").notNull(),
+	pedidoId: varchar("pedido_id", { length: 36 }),
+	tipoEmail: tipoEmail("tipo_email").notNull(),
+	destinatario: varchar({ length: 320 }).notNull(),
+	assunto: text().notNull(),
+	statusEmail: statusEmail("status_email").default('enviado').notNull(),
+	erroMensagem: text("erro_mensagem"),
+	criadoEm: timestamp("criado_em", { mode: 'string' }).defaultNow().notNull(),
 });
 
-/**
- * TABELA: reviews
- */
+export const pagamentosPix = pgTable("pagamentos_pix", {
+	id: varchar({ length: 36 }).primaryKey().notNull(),
+	pedidoId: varchar("pedido_id", { length: 36 }).notNull(),
+	utilizadorId: integer("utilizador_id").notNull(),
+	valor: numeric({ precision: 10, scale:  2 }).notNull(),
+	chavePix: text("chave_pix").notNull(),
+	qrCodeBase64: text("qr_code_base64"),
+	statusPix: statusPix("status_pix").default('pendente').notNull(),
+	comprovanteUrl: text("comprovante_url"),
+	motivoRejeicao: text("motivo_rejeicao"),
+	validadoPor: integer("validado_por"),
+	criadoEm: timestamp("criado_em", { mode: 'string' }).defaultNow().notNull(),
+	atualizadoEm: timestamp("atualizado_em", { mode: 'string' }).defaultNow().notNull(),
+	expiraEm: timestamp("expira_em", { mode: 'string' }),
+});
+
+export const pedidos = pgTable("pedidos", {
+	id: varchar({ length: 36 }).primaryKey().notNull(),
+	utilizadorId: integer("utilizador_id").notNull(),
+	produtoId: varchar("produto_id", { length: 36 }).notNull(),
+	tipoCompra: tipoCompra("tipo_compra").notNull(),
+	statusPagamento: statusPagamento("status_pagamento").default('pendente').notNull(),
+	statusEnvio: statusEnvio("status_envio").default('preparando').notNull(),
+	codigoRastreio: varchar("codigo_rastreio", { length: 50 }),
+	valorTotal: numeric("valor_total", { precision: 10, scale:  2 }).notNull(),
+	freteValor: numeric("frete_valor", { precision: 10, scale:  2 }),
+	enderecoRua: text("endereco_rua"),
+	enderecoNumero: text("endereco_numero"),
+	enderecoComplemento: text("endereco_complemento"),
+	enderecoBairro: text("endereco_bairro"),
+	enderecoCidade: text("endereco_cidade"),
+	enderecoEstado: varchar("endereco_estado", { length: 2 }),
+	enderecoCep: varchar("endereco_cep", { length: 10 }),
+	criadoEm: timestamp("criado_em", { mode: 'string' }).defaultNow().notNull(),
+	atualizadoEm: timestamp("atualizado_em", { mode: 'string' }).defaultNow().notNull(),
+});
+
+export const perfisQuiz = pgTable("perfis_quiz", {
+	id: varchar({ length: 36 }).primaryKey().notNull(),
+	utilizadorId: integer("utilizador_id").notNull(),
+	respostasBrutas: json("respostas_brutas").notNull(),
+	categoriaCalculada: text("categoria_calculada").notNull(),
+	criadoEm: timestamp("criado_em", { mode: 'string' }).defaultNow().notNull(),
+	clienteNome: text("cliente_nome"),
+	clienteEmail: varchar("cliente_email", { length: 320 }),
+	clienteWhatsapp: varchar("cliente_whatsapp", { length: 20 }),
+	clienteCep: varchar("cliente_cep", { length: 10 }),
+	clienteLogradouro: text("cliente_logradouro"),
+	clienteNumero: text("cliente_numero"),
+	clienteComplemento: text("cliente_complemento"),
+	clienteBairro: text("cliente_bairro"),
+	clienteCidade: text("cliente_cidade"),
+	clienteEstado: varchar("cliente_estado", { length: 2 }),
+	respostasPessoais: json("respostas_pessoais"),
+	respostasEmocionais: json("respostas_emocionais"),
+});
+
+export const produtos = pgTable("produtos", {
+	id: varchar({ length: 36 }).primaryKey().notNull(),
+	nome: text().notNull(),
+	descricao: text(),
+	precoAvulso: numeric("preco_avulso", { precision: 10, scale:  2 }).notNull(),
+	precoAssinatura: numeric("preco_assinatura", { precision: 10, scale:  2 }),
+	ativo: boolean().default(true).notNull(),
+	imagemUrl: text("imagem_url"),
+	categoria: text(),
+	criadoEm: timestamp("criado_em", { mode: 'string' }).defaultNow().notNull(),
+	atualizadoEm: timestamp("atualizado_em", { mode: 'string' }).defaultNow().notNull(),
+});
+
 export const reviews = pgTable("reviews", {
-  id: varchar("id", { length: 36 }).primaryKey(),
-  utilizador_id: integer("utilizador_id").notNull(),
-  produto_id: varchar("produto_id", { length: 36 }).notNull(),
-  pedido_id: varchar("pedido_id", { length: 36 }),
-  rating: integer("rating").notNull(),
-  comentario: text("comentario"),
-  moderado: boolean("moderado").default(false).notNull(),
-  deletado_em: timestamp("deletado_em"),
-  criado_em: timestamp("criado_em").defaultNow().notNull(),
-  atualizado_em: timestamp("atualizado_em").defaultNow().notNull(),
+	id: varchar({ length: 36 }).primaryKey().notNull(),
+	utilizadorId: integer("utilizador_id").notNull(),
+	produtoId: varchar("produto_id", { length: 36 }).notNull(),
+	pedidoId: varchar("pedido_id", { length: 36 }),
+	rating: integer().notNull(),
+	comentario: text(),
+	moderado: boolean().default(false).notNull(),
+	deletadoEm: timestamp("deletado_em", { mode: 'string' }),
+	criadoEm: timestamp("criado_em", { mode: 'string' }).defaultNow().notNull(),
+	atualizadoEm: timestamp("atualizado_em", { mode: 'string' }).defaultNow().notNull(),
 });
 
-/**
- * TABELA: email_logs
- */
-export const email_logs = pgTable("email_logs", {
-  id: varchar("id", { length: 36 }).primaryKey(),
-  utilizador_id: integer("utilizador_id").notNull(),
-  pedido_id: varchar("pedido_id", { length: 36 }),
-  tipo: tipoEmailEnum("tipo_email").notNull(),
-  destinatario: varchar("destinatario", { length: 320 }).notNull(),
-  assunto: text("assunto").notNull(),
-  status: statusEmailEnum("status_email").default("enviado").notNull(),
-  erro_mensagem: text("erro_mensagem"),
-  criado_em: timestamp("criado_em").defaultNow().notNull(),
-});
+export const utilizadores = pgTable("utilizadores", {
+	id: serial().primaryKey().notNull(),
+	openId: varchar({ length: 64 }),
+	nomeCompleto: text("nome_completo"),
+	email: varchar({ length: 320 }),
+	senhaHash: text("senha_hash"),
+	telefone: varchar({ length: 20 }),
+	enderecoCompleto: text("endereco_completo"),
+	role: role().default('cliente').notNull(),
+	createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
+	updatedAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
+}, (table) => [
+	unique("utilizadores_openId_unique").on(table.openId),
+	unique("utilizadores_email_unique").on(table.email),
+]);
 
-/**
- * TABELA: whatsapp_logs
- */
-export const whatsapp_logs = pgTable("whatsapp_logs", {
-  id: varchar("id", { length: 36 }).primaryKey(),
-  utilizador_id: integer("utilizador_id").notNull(),
-  pedido_id: varchar("pedido_id", { length: 36 }),
-  telefone: varchar("telefone", { length: 20 }).notNull(),
-  tipo: tipoWhatsappEnum("tipo_whatsapp").notNull(),
-  mensagem: text("mensagem").notNull(),
-  status: statusWhatsappEnum("status_whatsapp").default("enviado").notNull(),
-  erro_mensagem: text("erro_mensagem"),
-  whatsapp_message_id: varchar("whatsapp_message_id", { length: 100 }),
-  criado_em: timestamp("criado_em").defaultNow().notNull(),
+export const whatsappLogs = pgTable("whatsapp_logs", {
+	id: varchar({ length: 36 }).primaryKey().notNull(),
+	utilizadorId: integer("utilizador_id").notNull(),
+	pedidoId: varchar("pedido_id", { length: 36 }),
+	telefone: varchar({ length: 20 }).notNull(),
+	tipoWhatsapp: tipoWhatsapp("tipo_whatsapp").notNull(),
+	mensagem: text().notNull(),
+	statusWhatsapp: statusWhatsapp("status_whatsapp").default('enviado').notNull(),
+	erroMensagem: text("erro_mensagem"),
+	whatsappMessageId: varchar("whatsapp_message_id", { length: 100 }),
+	criadoEm: timestamp("criado_em", { mode: 'string' }).defaultNow().notNull(),
 });

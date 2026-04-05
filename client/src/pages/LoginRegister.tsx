@@ -101,11 +101,13 @@ export default function LoginRegister() {
 
           {/* Login Form */}
           {tab === "login" && (
-            <form onSubmit={handleLogin} className="space-y-4">
+            <form onSubmit={handleLogin} className="space-y-4" autoComplete="on">
               <div>
                 <Label htmlFor="email">Email</Label>
                 <Input
                   id="email"
+                  name="email"
+                  autoComplete="email"
                   type="email"
                   placeholder="seu@email.com"
                   value={email}
@@ -118,6 +120,8 @@ export default function LoginRegister() {
                 <Label htmlFor="senha">Senha</Label>
                 <Input
                   id="senha"
+                  name="current-password"
+                  autoComplete="current-password"
                   type="password"
                   placeholder="••••••"
                   value={senha}
@@ -144,11 +148,13 @@ export default function LoginRegister() {
 
           {/* Register Form */}
           {tab === "register" && (
-            <form onSubmit={handleRegister} className="space-y-4">
+            <form onSubmit={handleRegister} className="space-y-4" autoComplete="on">
               <div>
                 <Label htmlFor="nome">Nome Completo</Label>
                 <Input
                   id="nome"
+                  name="name"
+                  autoComplete="name"
                   type="text"
                   placeholder="Seu Nome"
                   value={nomeCompleto}
@@ -161,6 +167,8 @@ export default function LoginRegister() {
                 <Label htmlFor="email-register">Email</Label>
                 <Input
                   id="email-register"
+                  name="email"
+                  autoComplete="email"
                   type="email"
                   placeholder="seu@email.com"
                   value={email}
@@ -173,6 +181,8 @@ export default function LoginRegister() {
                 <Label htmlFor="senha-register">Senha</Label>
                 <Input
                   id="senha-register"
+                  name="new-password"
+                  autoComplete="new-password"
                   type="password"
                   placeholder="••••••"
                   value={senha}
@@ -185,6 +195,8 @@ export default function LoginRegister() {
                 <Label htmlFor="senha-confirm">Confirmar Senha</Label>
                 <Input
                   id="senha-confirm"
+                  name="new-password"
+                  autoComplete="new-password"
                   type="password"
                   placeholder="••••••"
                   value={senhaConfirm}

@@ -173,7 +173,7 @@ export default function Dashboard() {
                             <p className="font-semibold text-foreground">Pedido #{pedido.id.slice(0, 8)}</p>
                           </div>
                           <p className="text-sm text-muted-foreground">
-                            {new Date(pedido.criado_em).toLocaleDateString("pt-BR", { 
+                            {new Date(pedido.criadoEm).toLocaleDateString("pt-BR", { 
                               weekday: 'long', 
                               year: 'numeric', 
                               month: 'long', 
@@ -183,12 +183,12 @@ export default function Dashboard() {
                         </div>
                         <div className="text-right">
                           <p className="font-bold text-lg text-accent mb-2">
-                            R$ {parseFloat(pedido.valor_total).toFixed(2)}
+                            R$ {parseFloat(pedido.valorTotal).toFixed(2)}
                           </p>
-                          <div className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(pedido.status_pagamento)}`}>
-                            {getStatusIcon(pedido.status_pagamento)}
-                            {pedido.status_pagamento === "pago" ? "Pago" : 
-                             pedido.status_pagamento === "pendente" ? "Pendente" : "Cancelado"}
+                          <div className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(pedido.statusPagamento)}`}>
+                            {getStatusIcon(pedido.statusPagamento)}
+                            {pedido.statusPagamento === "pago" ? "Pago" : 
+                             pedido.statusPagamento === "pendente" ? "Pendente" : "Cancelado"}
                           </div>
                         </div>
                         <ChevronDown className={`w-5 h-5 text-muted-foreground ml-4 transition-transform ${expandedPedido === pedido.id ? 'rotate-180' : ''}`} />
@@ -205,19 +205,19 @@ export default function Dashboard() {
                           </div>
                           <div>
                             <p className="text-xs text-muted-foreground mb-1">Tipo de Compra</p>
-                            <p className="text-sm text-foreground capitalize">{pedido.tipo_compra === "avulsa" ? "Compra Avulsa" : "Assinatura"}</p>
+                            <p className="text-sm text-foreground capitalize">{pedido.tipoCompra === "avulsa" ? "Compra Avulsa" : "Assinatura"}</p>
                           </div>
                           <div>
                             <p className="text-xs text-muted-foreground mb-1">Método de Pagamento</p>
-                            <p className="text-sm text-foreground capitalize">{pedido.metodo_pagamento}</p>
+                            <p className="text-sm text-foreground capitalize">{pedido.metodoPagamento}</p>
                           </div>
                           <div>
                             <p className="text-xs text-muted-foreground mb-1">Data de Criação</p>
-                            <p className="text-sm text-foreground">{new Date(pedido.criado_em).toLocaleString("pt-BR")}</p>
+                            <p className="text-sm text-foreground">{new Date(pedido.criadoEm).toLocaleString("pt-BR")}</p>
                           </div>
                         </div>
 
-                        {pedido.status_pagamento === "pago" && (
+                        {pedido.statusPagamento === "pago" && (
                           <div className="pt-4 border-t border-border">
                             <Button variant="outline" size="sm" className="w-full">
                               <Download className="w-4 h-4 mr-2" />
@@ -226,7 +226,7 @@ export default function Dashboard() {
                           </div>
                         )}
 
-                        {pedido.status_pagamento === "pendente" && (
+                        {pedido.statusPagamento === "pendente" && (
                           <div className="pt-4 border-t border-border flex gap-2">
                             <Button size="sm" className="flex-1">
                               Pagar Agora

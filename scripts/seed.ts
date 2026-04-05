@@ -20,9 +20,9 @@ async function seed() {
   try {
     console.log("Inserindo usuário...");
     await db.insert(utilizadores).values({
-      nome_completo: "Juan Sales",
+      nomeCompleto: "Juan Sales",
       email: "juan@exemplo.com",
-      senha_hash: senhaHash,
+      senhaHash: senhaHash,
       role: "cliente",
     });
     const result = await db.select().from(utilizadores).where(eq(utilizadores.email, "juan@exemplo.com")).limit(1);

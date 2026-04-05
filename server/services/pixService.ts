@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from "uuid";
 import { getDb } from "../db";
-import { pagamentos_pix, pedidos } from "../../drizzle/schema";
+import { pagamentosPix, pedidos } from "../../drizzle/schema";
 import { eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 
@@ -40,14 +40,14 @@ export async function criarPagamentoPix(
   // Expira em 30 minutos
   const expiraEm = new Date(Date.now() + 30 * 60 * 1000);
 
-  await db.insert(pagamentos_pix).values({
+  await db.insert(pagamentosPix).values({
     id: pagamentoId,
-    pedido_id: pedidoId,
-    utilizador_id: utilizadorId,
+    pedidoId: pedidoId,
+    utilizadorId: utilizadorId,
     valor: valor.toString(),
-    chave_pix: chavePix,
-    qr_code_base64: dadosPix,
-    expira_em: expiraEm,
+    chavePix: chavePix,
+    qrCodeBase64: dadosPix,
+    expiraEm: expiraEm,
   });
 
   return {
@@ -66,8 +66,8 @@ export async function obterPagamentoPix(pagamentoId: string) {
 
   const pagamento = await db
     .select()
-    .from(pagamentos_pix)
-    .where(eq(pagamentos_pix.id, pagamentoId))
+    .from(pagamentosPix)
+    .where(eq(pagamentosPix.id, pagamentoId))
     .limit(1);
 
   if (pagamento.length === 0) {
@@ -94,24 +94,24 @@ export async function validarPagamentoPix(
   // Atualizar status do pagamento
   const novoStatus = aprovado ? "confirmado" : "rejeitado";
   await db
-    .update(pagamentos_pix)
+    .update(pagamentosPix)
     .set({
-      status: novoStatus,
-      validado_por: validadoPor,
-      motivo_rejeicao: motivo,
-      atualizado_em: new Date(),
+      statusPix: novoStatus,
+      validadoPor: validadoPor,
+      motivoRejeicao: motivo,
+      atualizadoEm: new Date(),
     })
-    .where(eq(pagamentos_pix.id, pagamentoId));
+    .where(eq(pagamentosPix.id, pagamentoId));
 
   // Se aprovado, atualizar status do pedido
   if (aprovado) {
     await db
       .update(pedidos)
       .set({
-        status_pagamento: "pago",
-        atualizado_em: new Date(),
+        statusPagamento: "pago",
+        atualizadoEm: new Date(),
       })
-      .where(eq(pedidos.id, pagamento.pedido_id));
+      .where(eq(pedidos.id, pagamento.pedidoId));
   }
 
   return { success: true, status: novoStatus };
@@ -126,8 +126,8 @@ export async function listarPagamentosPendentes() {
 
   return await db
     .select()
-    .from(pagamentos_pix)
-    .where(eq(pagamentos_pix.status, "pendente"));
+    .from(pagamentosPix)
+    .where(eq(pagamentosPix.statusPix, "pendente"));
 }
 
 /**
@@ -141,13 +141,13 @@ export async function expirarPagamentosVencidos() {
   
   const pagamentosVencidos = await db
     .select()
-    .from(pagamentos_pix)
-    .where(eq(pagamentos_pix.status, "pendente"));
+    .from(pagamentosPix)
+    .where(eq(pagamentosPix.statusPix, "pendente"));
 
   for (const pagamento of pagamentosVencidos) {
-    if (pagamento.expira_em && new Date(pagamento.expira_em) < agora) {
+    if (pagamento.expiraEm && new Date(pagamento.expiraEm) < agora) {
       await db
-        .update(pagamentos_pix)
+        .update(pagamentosPix)
         .set({
           status: "expirado",
           atualizado_em: new Date(),

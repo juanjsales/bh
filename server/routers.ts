@@ -6,7 +6,7 @@ import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import { v4 as uuidv4 } from "uuid";
 import { getDb } from "./db";
-import { perfis_quiz, pedidos, assinaturas, produtos, carrinho, utilizadores } from "../drizzle/schema";
+import { perfisQuiz, pedidos, assinaturas, produtos, carrinho, utilizadores } from "../drizzle/schema";
 import { eq, and } from "drizzle-orm";
 import { notificarNovoPedido, notificarPagamentoConfirmado } from "./notificacoes";
 import { loginLocal, registerLocal } from "./services/authService";
@@ -137,9 +137,9 @@ export const appRouter = router({
       
       const perfil = await db
         .select()
-        .from(perfis_quiz)
-        .where(eq(perfis_quiz.utilizador_id, ctx.user.id))
-        .orderBy((t) => t.criado_em)
+        .from(perfisQuiz)
+        .where(eq(perfisQuiz.utilizadorId, ctx.user.id))
+        .orderBy((t) => t.criadoEm)
         .limit(1);
       
       return perfil.length > 0 ? perfil[0] : null;
@@ -284,19 +284,19 @@ export const appRouter = router({
         
         await db.insert(pedidos).values({
           id: pedidoId,
-          utilizador_id: ctx.user.id,
-          produto_id: input.produto_id,
-          tipo_compra: input.tipo_compra,
-          valor_total: input.valor_total.toString(),
-          frete_valor: input.frete_valor?.toString(),
-          endereco_rua: input.endereco?.rua,
-          endereco_numero: input.endereco?.numero,
-          endereco_complemento: input.endereco?.complemento,
-          endereco_bairro: input.endereco?.bairro,
-          endereco_cidade: input.endereco?.cidade,
-          endereco_estado: input.endereco?.estado,
-          endereco_cep: input.endereco?.cep,
-          status_pagamento: "pendente",
+          utilizadorId: ctx.user.id,
+          produtoId: input.produto_id,
+          tipoCompra: input.tipo_compra,
+          valorTotal: input.valor_total.toString(),
+          freteValor: input.frete_valor?.toString(),
+          enderecoRua: input.endereco?.rua,
+          enderecoNumero: input.endereco?.numero,
+          enderecoComplemento: input.endereco?.complemento,
+          enderecoBairro: input.endereco?.bairro,
+          enderecoCidade: input.endereco?.cidade,
+          enderecoEstado: input.endereco?.estado,
+          enderecoCep: input.endereco?.cep,
+          statusPagamento: "pendente",
         } as any);
         
         // Buscar dados do produto para notificação
@@ -324,7 +324,7 @@ export const appRouter = router({
       const meusPedidos = await db
         .select()
         .from(pedidos)
-        .where(eq(pedidos.utilizador_id, ctx.user.id));
+        .where(eq(pedidos.utilizadorId, ctx.user.id));
       
       return meusPedidos;
     }),
@@ -357,9 +357,9 @@ export const appRouter = router({
         
         const updateData: Record<string, any> = {};
         
-        if (input.status_pagamento) updateData.status_pagamento = input.status_pagamento;
-        if (input.status_envio) updateData.status_envio = input.status_envio;
-        if (input.codigo_rastreio) updateData.codigo_rastreio = input.codigo_rastreio;
+        if (input.status_pagamento) updateData.statusPagamento = input.status_pagamento;
+        if (input.status_envio) updateData.statusEnvio = input.status_envio;
+        if (input.codigo_rastreio) updateData.codigoRastreio = input.codigo_rastreio;
         
         await db
           .update(pedidos)
@@ -390,10 +390,10 @@ export const appRouter = router({
         
         await db.insert(assinaturas).values({
           id: assinaturaId,
-          utilizador_id: ctx.user.id,
-          produto_id: input.produto_id,
-          pedido_origem_id: input.pedido_origem_id,
-          proxima_cobranca: input.proxima_cobranca,
+          utilizadorId: ctx.user.id,
+          produtoId: input.produto_id,
+          pedidoOrigemId: input.pedido_origem_id,
+          proximaCobranca: input.proxima_cobranca,
         } as any);
         
         return { id: assinaturaId, success: true };
@@ -408,7 +408,7 @@ export const appRouter = router({
       const minhasAssinaturas = await db
         .select()
         .from(assinaturas)
-        .where(eq(assinaturas.utilizador_id, ctx.user.id));
+        .where(eq(assinaturas.utilizadorId, ctx.user.id));
       
       return minhasAssinaturas;
     }),
@@ -433,7 +433,7 @@ export const appRouter = router({
           .where(eq(assinaturas.id, input.assinatura_id))
           .limit(1);
         
-        if (assinatura.length === 0 || assinatura[0].utilizador_id !== ctx.user.id) {
+        if (assinatura.length === 0 || assinatura[0].utilizadorId !== ctx.user.id) {
           throw new Error("Forbidden");
         }
         
@@ -622,9 +622,9 @@ export const appRouter = router({
           .from(carrinho)
           .where(
             and(
-              eq(carrinho.utilizador_id, ctx.user.id),
-              eq(carrinho.produto_id, input.produto_id),
-              eq(carrinho.tipo_compra, input.tipo_compra)
+              eq(carrinho.utilizadorId, ctx.user.id),
+              eq(carrinho.produtoId, input.produto_id),
+              eq(carrinho.tipoCompra, input.tipo_compra)
             )
           )
           .limit(1);
@@ -641,10 +641,10 @@ export const appRouter = router({
         
         await db.insert(carrinho).values({
           id: itemId,
-          utilizador_id: ctx.user.id,
-          produto_id: input.produto_id,
+          utilizadorId: ctx.user.id,
+          produtoId: input.produto_id,
           quantidade: input.quantidade,
-          tipo_compra: input.tipo_compra,
+          tipoCompra: input.tipo_compra,
         } as any);
         
         return { id: itemId, success: true };
@@ -659,7 +659,7 @@ export const appRouter = router({
       const itens = await db
         .select()
         .from(carrinho)
-        .where(eq(carrinho.utilizador_id, ctx.user.id));
+        .where(eq(carrinho.utilizadorId, ctx.user.id));
       
       return itens;
     }),
@@ -676,7 +676,7 @@ export const appRouter = router({
         const item = await db
           .select()
           .from(carrinho)
-          .where(and(eq(carrinho.id, input.item_id), eq(carrinho.utilizador_id, ctx.user.id)))
+          .where(and(eq(carrinho.id, input.item_id), eq(carrinho.utilizadorId, ctx.user.id)))
           .limit(1);
         
         if (item.length === 0) {
@@ -693,7 +693,7 @@ export const appRouter = router({
       const db = await getDb();
       if (!db) throw new Error("Database not available");
       
-      await db.delete(carrinho).where(eq(carrinho.utilizador_id, ctx.user.id));
+      await db.delete(carrinho).where(eq(carrinho.utilizadorId, ctx.user.id));
       return { success: true };
     }),
   }),

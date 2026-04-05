@@ -1,124 +1,109 @@
 {
-  "version": "5",
-  "dialect": "mysql",
-  "id": "6170be57-cb0c-4f74-a550-4aa9243d6b6a",
-  "prevId": "9b0c3561-5985-46a0-8f6e-52028a467f9f",
+  "id": "f69175a9-4065-45d9-817f-4be5b3c5ec39",
+  "prevId": "00000000-0000-0000-0000-000000000000",
+  "version": "7",
+  "dialect": "postgresql",
   "tables": {
-    "assinaturas": {
+    "public.assinaturas": {
       "name": "assinaturas",
+      "schema": "",
       "columns": {
         "id": {
           "name": "id",
           "type": "varchar(36)",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "primaryKey": true,
+          "notNull": true
         },
         "utilizador_id": {
           "name": "utilizador_id",
-          "type": "int",
+          "type": "integer",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "produto_id": {
           "name": "produto_id",
           "type": "varchar(36)",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "pedido_origem_id": {
           "name": "pedido_origem_id",
           "type": "varchar(36)",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "status": {
           "name": "status",
-          "type": "enum('ativa','pausada','cancelada')",
+          "type": "status",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
           "default": "'ativa'"
         },
         "proxima_cobranca": {
           "name": "proxima_cobranca",
           "type": "timestamp",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "criada_em": {
           "name": "criada_em",
           "type": "timestamp",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "(now())"
+          "default": "now()"
         },
         "atualizada_em": {
           "name": "atualizada_em",
           "type": "timestamp",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "onUpdate": true,
-          "default": "(now())"
+          "default": "now()"
         }
       },
       "indexes": {},
       "foreignKeys": {},
-      "compositePrimaryKeys": {
-        "assinaturas_id": {
-          "name": "assinaturas_id",
-          "columns": [
-            "id"
-          ]
-        }
-      },
+      "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "checkConstraint": {}
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
     },
-    "carrinho": {
+    "public.carrinho": {
       "name": "carrinho",
+      "schema": "",
       "columns": {
         "id": {
           "name": "id",
           "type": "varchar(36)",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "primaryKey": true,
+          "notNull": true
         },
         "utilizador_id": {
           "name": "utilizador_id",
-          "type": "int",
+          "type": "integer",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "produto_id": {
           "name": "produto_id",
           "type": "varchar(36)",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "quantidade": {
           "name": "quantidade",
-          "type": "int",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
           "default": 1
         },
         "tipo_compra": {
           "name": "tipo_compra",
-          "type": "enum('avulsa','assinatura')",
+          "type": "tipo_compra",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
           "default": "'avulsa'"
         },
         "criado_em": {
@@ -126,611 +111,638 @@
           "type": "timestamp",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "(now())"
+          "default": "now()"
         },
         "atualizado_em": {
           "name": "atualizado_em",
           "type": "timestamp",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "onUpdate": true,
-          "default": "(now())"
+          "default": "now()"
         }
       },
       "indexes": {},
       "foreignKeys": {},
-      "compositePrimaryKeys": {
-        "carrinho_id": {
-          "name": "carrinho_id",
-          "columns": [
-            "id"
-          ]
-        }
-      },
+      "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "checkConstraint": {}
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
     },
-    "email_logs": {
+    "public.email_logs": {
       "name": "email_logs",
+      "schema": "",
       "columns": {
         "id": {
           "name": "id",
           "type": "varchar(36)",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "primaryKey": true,
+          "notNull": true
         },
         "utilizador_id": {
           "name": "utilizador_id",
-          "type": "int",
+          "type": "integer",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "pedido_id": {
           "name": "pedido_id",
           "type": "varchar(36)",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
-        "tipo": {
-          "name": "tipo",
-          "type": "enum('confirmacao_pedido','status_entrega','recomendacao','outro')",
+        "tipo_email": {
+          "name": "tipo_email",
+          "type": "tipo_email",
+          "typeSchema": "public",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "destinatario": {
           "name": "destinatario",
           "type": "varchar(320)",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "assunto": {
           "name": "assunto",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
-        "status": {
-          "name": "status",
-          "type": "enum('enviado','falha','bounce','spam')",
+        "status_email": {
+          "name": "status_email",
+          "type": "status_email",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
           "default": "'enviado'"
         },
         "erro_mensagem": {
           "name": "erro_mensagem",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "criado_em": {
           "name": "criado_em",
           "type": "timestamp",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "(now())"
+          "default": "now()"
         }
       },
       "indexes": {},
       "foreignKeys": {},
-      "compositePrimaryKeys": {
-        "email_logs_id": {
-          "name": "email_logs_id",
-          "columns": [
-            "id"
-          ]
-        }
-      },
+      "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "checkConstraint": {}
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
     },
-    "pagamentos_pix": {
+    "public.pagamentos_pix": {
       "name": "pagamentos_pix",
+      "schema": "",
       "columns": {
         "id": {
           "name": "id",
           "type": "varchar(36)",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "primaryKey": true,
+          "notNull": true
         },
         "pedido_id": {
           "name": "pedido_id",
           "type": "varchar(36)",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "utilizador_id": {
           "name": "utilizador_id",
-          "type": "int",
+          "type": "integer",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "valor": {
           "name": "valor",
-          "type": "decimal(10,2)",
+          "type": "numeric(10, 2)",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "chave_pix": {
           "name": "chave_pix",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "qr_code_base64": {
           "name": "qr_code_base64",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
-        "status": {
-          "name": "status",
-          "type": "enum('pendente','confirmado','expirado','rejeitado')",
+        "status_pix": {
+          "name": "status_pix",
+          "type": "status_pix",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
           "default": "'pendente'"
         },
         "comprovante_url": {
           "name": "comprovante_url",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "motivo_rejeicao": {
           "name": "motivo_rejeicao",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "validado_por": {
           "name": "validado_por",
-          "type": "int",
+          "type": "integer",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "criado_em": {
           "name": "criado_em",
           "type": "timestamp",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "(now())"
+          "default": "now()"
         },
         "atualizado_em": {
           "name": "atualizado_em",
           "type": "timestamp",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "onUpdate": true,
-          "default": "(now())"
+          "default": "now()"
         },
         "expira_em": {
           "name": "expira_em",
           "type": "timestamp",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         }
       },
       "indexes": {},
       "foreignKeys": {},
-      "compositePrimaryKeys": {
-        "pagamentos_pix_id": {
-          "name": "pagamentos_pix_id",
-          "columns": [
-            "id"
-          ]
-        }
-      },
+      "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "checkConstraint": {}
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
     },
-    "pedidos": {
+    "public.pedidos": {
       "name": "pedidos",
+      "schema": "",
       "columns": {
         "id": {
           "name": "id",
           "type": "varchar(36)",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "primaryKey": true,
+          "notNull": true
         },
         "utilizador_id": {
           "name": "utilizador_id",
-          "type": "int",
+          "type": "integer",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "produto_id": {
           "name": "produto_id",
           "type": "varchar(36)",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "tipo_compra": {
           "name": "tipo_compra",
-          "type": "enum('avulsa','assinatura')",
+          "type": "tipo_compra",
+          "typeSchema": "public",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "status_pagamento": {
           "name": "status_pagamento",
-          "type": "enum('pendente','pago','cancelado')",
+          "type": "status_pagamento",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
           "default": "'pendente'"
         },
         "status_envio": {
           "name": "status_envio",
-          "type": "enum('preparando','enviado','entregue')",
+          "type": "status_envio",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
           "default": "'preparando'"
         },
         "codigo_rastreio": {
           "name": "codigo_rastreio",
           "type": "varchar(50)",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "valor_total": {
           "name": "valor_total",
-          "type": "decimal(10,2)",
+          "type": "numeric(10, 2)",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
+        },
+        "frete_valor": {
+          "name": "frete_valor",
+          "type": "numeric(10, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "endereco_rua": {
+          "name": "endereco_rua",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "endereco_numero": {
+          "name": "endereco_numero",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "endereco_complemento": {
+          "name": "endereco_complemento",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "endereco_bairro": {
+          "name": "endereco_bairro",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "endereco_cidade": {
+          "name": "endereco_cidade",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "endereco_estado": {
+          "name": "endereco_estado",
+          "type": "varchar(2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "endereco_cep": {
+          "name": "endereco_cep",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": false
         },
         "criado_em": {
           "name": "criado_em",
           "type": "timestamp",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "(now())"
+          "default": "now()"
         },
         "atualizado_em": {
           "name": "atualizado_em",
           "type": "timestamp",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "onUpdate": true,
-          "default": "(now())"
+          "default": "now()"
         }
       },
       "indexes": {},
       "foreignKeys": {},
-      "compositePrimaryKeys": {
-        "pedidos_id": {
-          "name": "pedidos_id",
-          "columns": [
-            "id"
-          ]
-        }
-      },
+      "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "checkConstraint": {}
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
     },
-    "perfis_quiz": {
+    "public.perfis_quiz": {
       "name": "perfis_quiz",
+      "schema": "",
       "columns": {
         "id": {
           "name": "id",
           "type": "varchar(36)",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "primaryKey": true,
+          "notNull": true
         },
         "utilizador_id": {
           "name": "utilizador_id",
-          "type": "int",
+          "type": "integer",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "respostas_brutas": {
           "name": "respostas_brutas",
           "type": "json",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "categoria_calculada": {
           "name": "categoria_calculada",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "criado_em": {
           "name": "criado_em",
           "type": "timestamp",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "(now())"
+          "default": "now()"
+        },
+        "cliente_nome": {
+          "name": "cliente_nome",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cliente_email": {
+          "name": "cliente_email",
+          "type": "varchar(320)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cliente_whatsapp": {
+          "name": "cliente_whatsapp",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cliente_cep": {
+          "name": "cliente_cep",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cliente_logradouro": {
+          "name": "cliente_logradouro",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cliente_numero": {
+          "name": "cliente_numero",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cliente_complemento": {
+          "name": "cliente_complemento",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cliente_bairro": {
+          "name": "cliente_bairro",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cliente_cidade": {
+          "name": "cliente_cidade",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cliente_estado": {
+          "name": "cliente_estado",
+          "type": "varchar(2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "respostas_pessoais": {
+          "name": "respostas_pessoais",
+          "type": "json",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "respostas_emocionais": {
+          "name": "respostas_emocionais",
+          "type": "json",
+          "primaryKey": false,
+          "notNull": false
         }
       },
       "indexes": {},
       "foreignKeys": {},
-      "compositePrimaryKeys": {
-        "perfis_quiz_id": {
-          "name": "perfis_quiz_id",
-          "columns": [
-            "id"
-          ]
-        }
-      },
+      "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "checkConstraint": {}
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
     },
-    "produtos": {
+    "public.produtos": {
       "name": "produtos",
+      "schema": "",
       "columns": {
         "id": {
           "name": "id",
           "type": "varchar(36)",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "primaryKey": true,
+          "notNull": true
         },
         "nome": {
           "name": "nome",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "descricao": {
           "name": "descricao",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "preco_avulso": {
           "name": "preco_avulso",
-          "type": "decimal(10,2)",
+          "type": "numeric(10, 2)",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "preco_assinatura": {
           "name": "preco_assinatura",
-          "type": "decimal(10,2)",
+          "type": "numeric(10, 2)",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "ativo": {
           "name": "ativo",
           "type": "boolean",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
           "default": true
         },
         "imagem_url": {
           "name": "imagem_url",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "categoria": {
           "name": "categoria",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "criado_em": {
           "name": "criado_em",
           "type": "timestamp",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "(now())"
+          "default": "now()"
         },
         "atualizado_em": {
           "name": "atualizado_em",
           "type": "timestamp",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "onUpdate": true,
-          "default": "(now())"
+          "default": "now()"
         }
       },
       "indexes": {},
       "foreignKeys": {},
-      "compositePrimaryKeys": {
-        "produtos_id": {
-          "name": "produtos_id",
-          "columns": [
-            "id"
-          ]
-        }
-      },
+      "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "checkConstraint": {}
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
     },
-    "reviews": {
+    "public.reviews": {
       "name": "reviews",
+      "schema": "",
       "columns": {
         "id": {
           "name": "id",
           "type": "varchar(36)",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "primaryKey": true,
+          "notNull": true
         },
         "utilizador_id": {
           "name": "utilizador_id",
-          "type": "int",
+          "type": "integer",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "produto_id": {
           "name": "produto_id",
           "type": "varchar(36)",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "pedido_id": {
           "name": "pedido_id",
           "type": "varchar(36)",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "rating": {
           "name": "rating",
-          "type": "int",
+          "type": "integer",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "comentario": {
           "name": "comentario",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "moderado": {
           "name": "moderado",
           "type": "boolean",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
           "default": false
         },
         "deletado_em": {
           "name": "deletado_em",
           "type": "timestamp",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "criado_em": {
           "name": "criado_em",
           "type": "timestamp",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "(now())"
+          "default": "now()"
         },
         "atualizado_em": {
           "name": "atualizado_em",
           "type": "timestamp",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "onUpdate": true,
-          "default": "(now())"
+          "default": "now()"
         }
       },
       "indexes": {},
       "foreignKeys": {},
-      "compositePrimaryKeys": {
-        "reviews_id": {
-          "name": "reviews_id",
-          "columns": [
-            "id"
-          ]
-        }
-      },
+      "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "checkConstraint": {}
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
     },
-    "utilizadores": {
+    "public.utilizadores": {
       "name": "utilizadores",
+      "schema": "",
       "columns": {
         "id": {
           "name": "id",
-          "type": "int",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": true
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
         },
         "openId": {
           "name": "openId",
           "type": "varchar(64)",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "nome_completo": {
           "name": "nome_completo",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "email": {
           "name": "email",
           "type": "varchar(320)",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "senha_hash": {
           "name": "senha_hash",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "telefone": {
           "name": "telefone",
           "type": "varchar(20)",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "endereco_completo": {
           "name": "endereco_completo",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "role": {
           "name": "role",
-          "type": "enum('cliente','admin')",
+          "type": "role",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
           "default": "'cliente'"
         },
         "createdAt": {
@@ -738,143 +750,220 @@
           "type": "timestamp",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "(now())"
+          "default": "now()"
         },
         "updatedAt": {
           "name": "updatedAt",
           "type": "timestamp",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "onUpdate": true,
-          "default": "(now())"
+          "default": "now()"
         }
       },
       "indexes": {},
       "foreignKeys": {},
-      "compositePrimaryKeys": {
-        "utilizadores_id": {
-          "name": "utilizadores_id",
-          "columns": [
-            "id"
-          ]
-        }
-      },
+      "compositePrimaryKeys": {},
       "uniqueConstraints": {
         "utilizadores_openId_unique": {
           "name": "utilizadores_openId_unique",
+          "nullsNotDistinct": false,
           "columns": [
             "openId"
           ]
         },
         "utilizadores_email_unique": {
           "name": "utilizadores_email_unique",
+          "nullsNotDistinct": false,
           "columns": [
             "email"
           ]
         }
       },
-      "checkConstraint": {}
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
     },
-    "whatsapp_logs": {
+    "public.whatsapp_logs": {
       "name": "whatsapp_logs",
+      "schema": "",
       "columns": {
         "id": {
           "name": "id",
           "type": "varchar(36)",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "primaryKey": true,
+          "notNull": true
         },
         "utilizador_id": {
           "name": "utilizador_id",
-          "type": "int",
+          "type": "integer",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "pedido_id": {
           "name": "pedido_id",
           "type": "varchar(36)",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "telefone": {
           "name": "telefone",
           "type": "varchar(20)",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
-        "tipo": {
-          "name": "tipo",
-          "type": "enum('pagamento_pendente','pagamento_confirmado','entrega','outro')",
+        "tipo_whatsapp": {
+          "name": "tipo_whatsapp",
+          "type": "tipo_whatsapp",
+          "typeSchema": "public",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "mensagem": {
           "name": "mensagem",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
-        "status": {
-          "name": "status",
-          "type": "enum('enviado','falha','entregue','lido')",
+        "status_whatsapp": {
+          "name": "status_whatsapp",
+          "type": "status_whatsapp",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
           "default": "'enviado'"
         },
         "erro_mensagem": {
           "name": "erro_mensagem",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "whatsapp_message_id": {
           "name": "whatsapp_message_id",
           "type": "varchar(100)",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "criado_em": {
           "name": "criado_em",
           "type": "timestamp",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "(now())"
+          "default": "now()"
         }
       },
       "indexes": {},
       "foreignKeys": {},
-      "compositePrimaryKeys": {
-        "whatsapp_logs_id": {
-          "name": "whatsapp_logs_id",
-          "columns": [
-            "id"
-          ]
-        }
-      },
+      "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "checkConstraint": {}
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
     }
   },
+  "enums": {
+    "public.role": {
+      "name": "role",
+      "schema": "public",
+      "values": [
+        "cliente",
+        "admin"
+      ]
+    },
+    "public.status": {
+      "name": "status",
+      "schema": "public",
+      "values": [
+        "ativa",
+        "pausada",
+        "cancelada"
+      ]
+    },
+    "public.status_email": {
+      "name": "status_email",
+      "schema": "public",
+      "values": [
+        "enviado",
+        "falha",
+        "bounce",
+        "spam"
+      ]
+    },
+    "public.status_envio": {
+      "name": "status_envio",
+      "schema": "public",
+      "values": [
+        "preparando",
+        "enviado",
+        "entregue"
+      ]
+    },
+    "public.status_pagamento": {
+      "name": "status_pagamento",
+      "schema": "public",
+      "values": [
+        "pendente",
+        "pago",
+        "cancelado"
+      ]
+    },
+    "public.status_pix": {
+      "name": "status_pix",
+      "schema": "public",
+      "values": [
+        "pendente",
+        "confirmado",
+        "expirado",
+        "rejeitado"
+      ]
+    },
+    "public.status_whatsapp": {
+      "name": "status_whatsapp",
+      "schema": "public",
+      "values": [
+        "enviado",
+        "falha",
+        "entregue",
+        "lido"
+      ]
+    },
+    "public.tipo_compra": {
+      "name": "tipo_compra",
+      "schema": "public",
+      "values": [
+        "avulsa",
+        "assinatura"
+      ]
+    },
+    "public.tipo_email": {
+      "name": "tipo_email",
+      "schema": "public",
+      "values": [
+        "confirmacao_pedido",
+        "status_entrega",
+        "recomendacao",
+        "outro"
+      ]
+    },
+    "public.tipo_whatsapp": {
+      "name": "tipo_whatsapp",
+      "schema": "public",
+      "values": [
+        "pagamento_pendente",
+        "pagamento_confirmado",
+        "entrega",
+        "outro"
+      ]
+    }
+  },
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
   "views": {},
   "_meta": {
+    "columns": {},
     "schemas": {},
-    "tables": {},
-    "columns": {}
-  },
-  "internal": {
-    "tables": {},
-    "indexes": {}
+    "tables": {}
   }
 }
