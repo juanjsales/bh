@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: box-health
+    env: node
+    buildCommand: pnpm install --frozen-lockfile && pnpm run build
+    startCommand: pnpm run start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      # Adicione outras variáveis de ambiente necessárias aqui (ex: chaves de API, segredos)

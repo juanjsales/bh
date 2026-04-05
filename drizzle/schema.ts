@@ -1,30 +1,42 @@
 import {
-  int,
-  json,
-  mysqlEnum,
-  mysqlTable,
+  pgTable,
+  pgEnum,
+  serial,
+  varchar,
   text,
   timestamp,
-  varchar,
+  json,
   decimal,
   boolean,
-} from "drizzle-orm/mysql-core";
+  integer,
+} from "drizzle-orm/pg-core";
+
+// Enums
+export const roleEnum = pgEnum("role", ["cliente", "admin"]);
+export const tipoCompraEnum = pgEnum("tipo_compra", ["avulsa", "assinatura"]);
+export const statusPagamentoEnum = pgEnum("status_pagamento", ["pendente", "pago", "cancelado"]);
+export const statusEnvioEnum = pgEnum("status_envio", ["preparando", "enviado", "entregue"]);
+export const statusAssinaturaEnum = pgEnum("status", ["ativa", "pausada", "cancelada"]);
+export const statusPixEnum = pgEnum("status_pix", ["pendente", "confirmado", "expirado", "rejeitado"]);
+export const tipoEmailEnum = pgEnum("tipo_email", ["confirmacao_pedido", "status_entrega", "recomendacao", "outro"]);
+export const statusEmailEnum = pgEnum("status_email", ["enviado", "falha", "bounce", "spam"]);
+export const tipoWhatsappEnum = pgEnum("tipo_whatsapp", ["pagamento_pendente", "pagamento_confirmado", "entrega", "outro"]);
+export const statusWhatsappEnum = pgEnum("status_whatsapp", ["enviado", "falha", "entregue", "lido"]);
 
 /**
  * TABELA: utilizadores (Identidade e RBAC)
- * Armazena informações de usuários e controle de acesso
  */
-export const utilizadores = mysqlTable("utilizadores", {
-  id: int("id").autoincrement().primaryKey(),
+export const utilizadores = pgTable("utilizadores", {
+  id: serial("id").primaryKey(),
   openId: varchar("openId", { length: 64 }).unique(),
   nome_completo: text("nome_completo"),
   email: varchar("email", { length: 320 }).unique(),
   senha_hash: text("senha_hash"),
   telefone: varchar("telefone", { length: 20 }),
   endereco_completo: text("endereco_completo"),
-  role: mysqlEnum("role", ["cliente", "admin"]).default("cliente").notNull(),
+  role: roleEnum("role").default("cliente").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });
 
 export type Utilizador = typeof utilizadores.$inferSelect;
@@ -32,13 +44,12 @@ export type InsertUtilizador = typeof utilizadores.$inferInsert;
 
 /**
  * TABELA: perfis_quiz (Diagnóstico Emocional)
- * Armazena as respostas do quiz emocional e categoria calculada
  */
-export const perfis_quiz = mysqlTable("perfis_quiz", {
-  id: varchar("id", { length: 36 }).primaryKey(), // UUID
-  utilizador_id: int("utilizador_id").notNull(),
+export const perfis_quiz = pgTable("perfis_quiz", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  utilizador_id: integer("utilizador_id").notNull(),
   respostas_brutas: json("respostas_brutas").$type<Record<string, any>>().notNull(),
-  categoria_calculada: text("categoria_calculada").notNull(), // Ex: 'Foco', 'Relaxamento', 'Energia'
+  categoria_calculada: text("categoria_calculada").notNull(),
   criado_em: timestamp("criado_em").defaultNow().notNull(),
   cliente_nome: text("cliente_nome"),
   cliente_email: varchar("cliente_email", { length: 320 }),
@@ -54,44 +65,32 @@ export const perfis_quiz = mysqlTable("perfis_quiz", {
   respostas_emocionais: json("respostas_emocionais").$type<Record<string, any>>(),
 });
 
-export type PerfilQuiz = typeof perfis_quiz.$inferSelect;
-export type InsertPerfilQuiz = typeof perfis_quiz.$inferInsert;
-
 /**
  * TABELA: produtos (Catálogo Fixo)
- * Armazena os produtos (caixas de bem-estar)
  */
-export const produtos = mysqlTable("produtos", {
-  id: varchar("id", { length: 36 }).primaryKey(), // UUID
+export const produtos = pgTable("produtos", {
+  id: varchar("id", { length: 36 }).primaryKey(),
   nome: text("nome").notNull(),
   descricao: text("descricao"),
   preco_avulso: decimal("preco_avulso", { precision: 10, scale: 2 }).notNull(),
   preco_assinatura: decimal("preco_assinatura", { precision: 10, scale: 2 }),
   ativo: boolean("ativo").default(true).notNull(),
-  imagem_url: text("imagem_url"), // URL da imagem no S3
-  categoria: text("categoria"), // Ex: 'Foco', 'Relaxamento', 'Energia'
+  imagem_url: text("imagem_url"),
+  categoria: text("categoria"),
   criado_em: timestamp("criado_em").defaultNow().notNull(),
-  atualizado_em: timestamp("atualizado_em").defaultNow().onUpdateNow().notNull(),
+  atualizado_em: timestamp("atualizado_em").defaultNow().notNull(),
 });
-
-export type Produto = typeof produtos.$inferSelect;
-export type InsertProduto = typeof produtos.$inferInsert;
 
 /**
  * TABELA: pedidos (Nó Transacional Central) 🎯
- * Centro da arquitetura - rastreia todas as transações
  */
-export const pedidos = mysqlTable("pedidos", {
-  id: varchar("id", { length: 36 }).primaryKey(), // UUID
-  utilizador_id: int("utilizador_id").notNull(),
+export const pedidos = pgTable("pedidos", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  utilizador_id: integer("utilizador_id").notNull(),
   produto_id: varchar("produto_id", { length: 36 }).notNull(),
-  tipo_compra: mysqlEnum("tipo_compra", ["avulsa", "assinatura"]).notNull(),
-  status_pagamento: mysqlEnum("status_pagamento", ["pendente", "pago", "cancelado"])
-    .default("pendente")
-    .notNull(),
-  status_envio: mysqlEnum("status_envio", ["preparando", "enviado", "entregue"])
-    .default("preparando")
-    .notNull(),
+  tipo_compra: tipoCompraEnum("tipo_compra").notNull(),
+  status_pagamento: statusPagamentoEnum("status_pagamento").default("pendente").notNull(),
+  status_envio: statusEnvioEnum("status_envio").default("preparando").notNull(),
   codigo_rastreio: varchar("codigo_rastreio", { length: 50 }),
   valor_total: decimal("valor_total", { precision: 10, scale: 2 }).notNull(),
   frete_valor: decimal("frete_valor", { precision: 10, scale: 2 }),
@@ -103,135 +102,98 @@ export const pedidos = mysqlTable("pedidos", {
   endereco_estado: varchar("endereco_estado", { length: 2 }),
   endereco_cep: varchar("endereco_cep", { length: 10 }),
   criado_em: timestamp("criado_em").defaultNow().notNull(),
-  atualizado_em: timestamp("atualizado_em").defaultNow().onUpdateNow().notNull(),
+  atualizado_em: timestamp("atualizado_em").defaultNow().notNull(),
 });
-
-export type Pedido = typeof pedidos.$inferSelect;
-export type InsertPedido = typeof pedidos.$inferInsert;
 
 /**
  * TABELA: assinaturas (Motor de Recorrência)
- * Gerencia assinaturas recorrentes dos clientes
  */
-export const assinaturas = mysqlTable("assinaturas", {
-  id: varchar("id", { length: 36 }).primaryKey(), // UUID
-  utilizador_id: int("utilizador_id").notNull(),
+export const assinaturas = pgTable("assinaturas", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  utilizador_id: integer("utilizador_id").notNull(),
   produto_id: varchar("produto_id", { length: 36 }).notNull(),
   pedido_origem_id: varchar("pedido_origem_id", { length: 36 }).notNull(),
-  status: mysqlEnum("status", ["ativa", "pausada", "cancelada"])
-    .default("ativa")
-    .notNull(),
+  status: statusAssinaturaEnum("status").default("ativa").notNull(),
   proxima_cobranca: timestamp("proxima_cobranca").notNull(),
   criada_em: timestamp("criada_em").defaultNow().notNull(),
-  atualizada_em: timestamp("atualizada_em").defaultNow().onUpdateNow().notNull(),
+  atualizada_em: timestamp("atualizada_em").defaultNow().notNull(),
 });
-
-export type Assinatura = typeof assinaturas.$inferSelect;
-export type InsertAssinatura = typeof assinaturas.$inferInsert;
 
 /**
  * TABELA: carrinho (Carrinho de Compras)
- * Armazena itens do carrinho para clientes logados
  */
-export const carrinho = mysqlTable("carrinho", {
-  id: varchar("id", { length: 36 }).primaryKey(), // UUID
-  utilizador_id: int("utilizador_id").notNull(),
+export const carrinho = pgTable("carrinho", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  utilizador_id: integer("utilizador_id").notNull(),
   produto_id: varchar("produto_id", { length: 36 }).notNull(),
-  quantidade: int("quantidade").default(1).notNull(),
-  tipo_compra: mysqlEnum("tipo_compra", ["avulsa", "assinatura"]).default("avulsa").notNull(),
+  quantidade: integer("quantidade").default(1).notNull(),
+  tipo_compra: tipoCompraEnum("tipo_compra").default("avulsa").notNull(),
   criado_em: timestamp("criado_em").defaultNow().notNull(),
-  atualizado_em: timestamp("atualizado_em").defaultNow().onUpdateNow().notNull(),
+  atualizado_em: timestamp("atualizado_em").defaultNow().notNull(),
 });
 
-export type CarrinhoItem = typeof carrinho.$inferSelect;
-export type InsertCarrinhoItem = typeof carrinho.$inferInsert;
-
 /**
- * TABELA: pagamentos_pix (Gerenciamento de Pagamentos PIX Manual)
- * Armazena informacoes de pagamentos PIX para validacao manual
+ * TABELA: pagamentos_pix
  */
-export const pagamentos_pix = mysqlTable("pagamentos_pix", {
+export const pagamentos_pix = pgTable("pagamentos_pix", {
   id: varchar("id", { length: 36 }).primaryKey(),
   pedido_id: varchar("pedido_id", { length: 36 }).notNull(),
-  utilizador_id: int("utilizador_id").notNull(),
+  utilizador_id: integer("utilizador_id").notNull(),
   valor: decimal("valor", { precision: 10, scale: 2 }).notNull(),
   chave_pix: text("chave_pix").notNull(),
   qr_code_base64: text("qr_code_base64"),
-  status: mysqlEnum("status", ["pendente", "confirmado", "expirado", "rejeitado"])
-    .default("pendente")
-    .notNull(),
+  status: statusPixEnum("status_pix").default("pendente").notNull(),
   comprovante_url: text("comprovante_url"),
   motivo_rejeicao: text("motivo_rejeicao"),
-  validado_por: int("validado_por"),
+  validado_por: integer("validado_por"),
   criado_em: timestamp("criado_em").defaultNow().notNull(),
-  atualizado_em: timestamp("atualizado_em").defaultNow().onUpdateNow().notNull(),
+  atualizado_em: timestamp("atualizado_em").defaultNow().notNull(),
   expira_em: timestamp("expira_em"),
 });
 
-export type PagamentoPix = typeof pagamentos_pix.$inferSelect;
-export type InsertPagamentoPix = typeof pagamentos_pix.$inferInsert;
-
 /**
- * TABELA: reviews (Avaliações de Produtos)
- * Armazena avaliações de 5 estrelas e comentários dos clientes
+ * TABELA: reviews
  */
-export const reviews = mysqlTable("reviews", {
-  id: varchar("id", { length: 36 }).primaryKey(), // UUID
-  utilizador_id: int("utilizador_id").notNull(),
+export const reviews = pgTable("reviews", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  utilizador_id: integer("utilizador_id").notNull(),
   produto_id: varchar("produto_id", { length: 36 }).notNull(),
-  pedido_id: varchar("pedido_id", { length: 36 }), // Referência ao pedido para validação
-  rating: int("rating").notNull(), // 1-5 estrelas
+  pedido_id: varchar("pedido_id", { length: 36 }),
+  rating: integer("rating").notNull(),
   comentario: text("comentario"),
   moderado: boolean("moderado").default(false).notNull(),
-  deletado_em: timestamp("deletado_em"), // Soft delete
+  deletado_em: timestamp("deletado_em"),
   criado_em: timestamp("criado_em").defaultNow().notNull(),
-  atualizado_em: timestamp("atualizado_em").defaultNow().onUpdateNow().notNull(),
+  atualizado_em: timestamp("atualizado_em").defaultNow().notNull(),
 });
 
-export type Review = typeof reviews.$inferSelect;
-export type InsertReview = typeof reviews.$inferInsert;
-
 /**
- * TABELA: email_logs (Histórico de Emails Enviados)
- * Rastreia todos os emails enviados para auditoria e retry
+ * TABELA: email_logs
  */
-export const email_logs = mysqlTable("email_logs", {
-  id: varchar("id", { length: 36 }).primaryKey(), // UUID
-  utilizador_id: int("utilizador_id").notNull(),
+export const email_logs = pgTable("email_logs", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  utilizador_id: integer("utilizador_id").notNull(),
   pedido_id: varchar("pedido_id", { length: 36 }),
-  tipo: mysqlEnum("tipo", ["confirmacao_pedido", "status_entrega", "recomendacao", "outro"])
-    .notNull(),
+  tipo: tipoEmailEnum("tipo_email").notNull(),
   destinatario: varchar("destinatario", { length: 320 }).notNull(),
   assunto: text("assunto").notNull(),
-  status: mysqlEnum("status", ["enviado", "falha", "bounce", "spam"])
-    .default("enviado")
-    .notNull(),
+  status: statusEmailEnum("status_email").default("enviado").notNull(),
   erro_mensagem: text("erro_mensagem"),
   criado_em: timestamp("criado_em").defaultNow().notNull(),
 });
 
-export type EmailLog = typeof email_logs.$inferSelect;
-export type InsertEmailLog = typeof email_logs.$inferInsert;
-
 /**
- * TABELA: whatsapp_logs (Histórico de Mensagens WhatsApp)
- * Rastreia todas as mensagens WhatsApp enviadas
+ * TABELA: whatsapp_logs
  */
-export const whatsapp_logs = mysqlTable("whatsapp_logs", {
-  id: varchar("id", { length: 36 }).primaryKey(), // UUID
-  utilizador_id: int("utilizador_id").notNull(),
+export const whatsapp_logs = pgTable("whatsapp_logs", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  utilizador_id: integer("utilizador_id").notNull(),
   pedido_id: varchar("pedido_id", { length: 36 }),
   telefone: varchar("telefone", { length: 20 }).notNull(),
-  tipo: mysqlEnum("tipo", ["pagamento_pendente", "pagamento_confirmado", "entrega", "outro"])
-    .notNull(),
+  tipo: tipoWhatsappEnum("tipo_whatsapp").notNull(),
   mensagem: text("mensagem").notNull(),
-  status: mysqlEnum("status", ["enviado", "falha", "entregue", "lido"])
-    .default("enviado")
-    .notNull(),
+  status: statusWhatsappEnum("status_whatsapp").default("enviado").notNull(),
   erro_mensagem: text("erro_mensagem"),
   whatsapp_message_id: varchar("whatsapp_message_id", { length: 100 }),
   criado_em: timestamp("criado_em").defaultNow().notNull(),
 });
-
-export type WhatsappLog = typeof whatsapp_logs.$inferSelect;
-export type InsertWhatsappLog = typeof whatsapp_logs.$inferInsert;
