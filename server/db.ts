@@ -3,19 +3,20 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import { InsertUtilizador, utilizadores } from "../drizzle/schema";
 import { ENV } from './_core/env';
+import { logger } from './_core/logger';
 
 let _db: any = null;
 
 export async function getDb() {
   if (!_db && ENV.databaseUrl) {
     try {
-      console.log("[Database] Tentando conectar ao URL:", ENV.databaseUrl);
+      logger.info("[Database] Tentando conectar ao URL:", ENV.databaseUrl);
       const pool = new Pool({ connectionString: ENV.databaseUrl });
       _db = drizzle(pool);
       
-      console.log("[Database] Conexão estabelecida com sucesso!");
+      logger.info("[Database] Conexão estabelecida com sucesso!");
     } catch (error) {
-      console.error("[Database] Falha ao conectar:", error);
+      logger.error("[Database] Falha ao conectar:", error);
       _db = null;
     }
   }
@@ -28,8 +29,8 @@ export async function upsertUtilizador(user: InsertUtilizador): Promise<void> {
   }
 
   const db = await getDb();
-  if (!db) {
-    console.warn("[Database] Cannot upsert user: database not available");
+    if (!db) {
+    logger.warn("[Database] Cannot upsert user: database not available");
     return;
   }
 
@@ -51,7 +52,7 @@ export async function upsertUtilizador(user: InsertUtilizador): Promise<void> {
       },
     });
   } catch (error) {
-    console.error("[Database] Failed to upsert user:", error);
+    logger.error("[Database] Failed to upsert user:", error);
     throw error;
   }
 }
@@ -59,7 +60,7 @@ export async function upsertUtilizador(user: InsertUtilizador): Promise<void> {
 export async function getUtilizadorById(id: number) {
   const db = await getDb();
   if (!db) {
-    console.warn("[Database] Cannot get user: database not available");
+    logger.warn("[Database] Cannot get user: database not available");
     return undefined;
   }
 
@@ -71,7 +72,7 @@ export async function getUtilizadorById(id: number) {
 export async function getUtilizadorByOpenId(openId: string) {
   const db = await getDb();
   if (!db) {
-    console.warn("[Database] Cannot get user: database not available");
+    logger.warn("[Database] Cannot get user: database not available");
     return undefined;
   }
 
