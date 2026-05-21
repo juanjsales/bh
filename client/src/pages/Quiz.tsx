@@ -116,29 +116,23 @@ const QUIZ_QUESTIONS: QuizQuestion[] = [
   },
 ];
 
-const ETAPAS = [
-  { numero: 1, titulo: "Cadastro", cor: "from-blue-500 to-blue-600" },
-  { numero: 2, titulo: "Sono e Descanso", cor: "from-purple-500 to-purple-600" },
-  { numero: 3, titulo: "Estresse e Ansiedade", cor: "from-pink-500 to-pink-600" },
-  { numero: 4, titulo: "Energia e Foco", cor: "from-yellow-500 to-yellow-600" },
-  { numero: 5, titulo: "Bem-estar e Preferências", cor: "from-green-500 to-green-600" },
-  { numero: 6, titulo: "Finalização", cor: "from-orange-500 to-orange-600" },
-];
+
 
 export default function Quiz() {
   const { isAuthenticated, user } = useAuth();
   const [, setLocation] = useLocation();
   const quizStore = useQuizStore();
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [respostas, setRespostas] = useState<Record<string, any>>({});
+  const [respostas, setRespostas] = useState<Record<string, string | string[] | number>>({});
   const [userDataForm, setUserDataForm] = useState({ nome: "", email: "", whatsapp: "", senha: "" });
   const [isLoading, setIsLoading] = useState(false);
   const [etapaFluxo, setEtapaFluxo] = useState<"cadastro" | "cep" | "quiz">("cadastro");
 
   useEffect(() => {
-    // Inicializa o quiz se não estiver autenticado ou se o quizId não estiver definido
     if (!isAuthenticated || !quizStore.quizId) {
-      quizStore.iniciarQuiz();
+      if (quizStore.quizId === "") { 
+        quizStore.iniciarQuiz();
+      }
     }
 
     if (isAuthenticated && user) {
@@ -151,14 +145,9 @@ export default function Quiz() {
 
       if (quizStore.endereco && etapaFluxo !== "quiz") {
         setEtapaFluxo("quiz");
-        quizStore.avancarEtapa(); // Avança para a primeira pergunta do quiz
-      } else if (!quizStore.endereco && etapaFluxo !== "cep") {
-        setEtapaFluxo("cep");
       }
-    } else if (!isAuthenticated && etapaFluxo !== "cadastro") {
-      setEtapaFluxo("cadastro");
     }
-  }, [isAuthenticated, user, quizStore, etapaFluxo]);
+  }, [isAuthenticated, user, quizStore.quizId, quizStore.endereco, etapaFluxo]);
 
   const salvarRespostasMutation = trpc.quiz.salvarRespostas.useMutation();
 
@@ -166,30 +155,24 @@ export default function Quiz() {
   const isQuizStep = etapaFluxo === "quiz" && !isFinalStep;
   const currentQuestion = isQuizStep ? QUIZ_QUESTIONS[currentQuestionIndex] : null;
   
-  // Ajusta a etapa atual para considerar as etapas de cadastro e CEP
   const etapaAtualDisplay = etapaFluxo === "cadastro" ? 1 : (etapaFluxo === "cep" ? 1 : quizStore.etapa_atual);
-  const etapaInfo = ETAPAS[etapaAtualDisplay - 1];
   
-  const questoesEtapa = isQuizStep ? QUIZ_QUESTIONS.filter((q) => q.etapa === quizStore.etapa_atual) : [];
   const progresso = etapaFluxo === "cadastro" ? 0 : (etapaFluxo === "cep" ? 10 : (isFinalStep ? 100 : ((currentQuestionIndex + 1) / QUIZ_QUESTIONS.length) * 90 + 10));
 
-  // Removido handleCepComplete pois a lógica foi movida para o useEffect e onComplete do CepInput
-
-  const handleResposta = async (valor: any) => {
+  const handleResposta = (valor: string | string[] | number) => {
+    if (!currentQuestion) return;
+    
     const novasRespostas = { ...respostas, [currentQuestion.id]: valor };
     setRespostas(novasRespostas);
 
-    // Salvar no store
     quizStore.adicionarResposta(currentQuestion.id, valor);
 
-    // Próxima etapa
     setCurrentQuestionIndex(currentQuestionIndex + 1);
   };
 
   const finalizarQuiz = async () => {
     setIsLoading(true);
     try {
-      // Calcular categoria baseado nas respostas
       const sono = respostas.qualidade_sono || 3;
       const estresse = respostas.nivel_estresse || 3;
       const energia = respostas.energia || 3;
@@ -197,7 +180,6 @@ export default function Quiz() {
 
       let categoria = "calma";
 
-      // Lógica de categorização
       if (sono <= 2) {
         categoria = "sono";
       } else if (estresse >= 4) {
@@ -210,14 +192,19 @@ export default function Quiz() {
         categoria = "equilibrio";
       }
 
-      // Salvar perfil no banco
       await salvarRespostasMutation.mutateAsync({
         respostas_brutas: { ...respostas },
         categoria_calculada: categoria,
         cliente_nome: userDataForm.nome,
         cliente_email: userDataForm.email,
         cliente_whatsapp: userDataForm.whatsapp,
-        cliente_cep: quizStore.endereco?.cep || "",
+        cliente_cep: quizStore.endereco?.cep || "00000000",
+        cliente_logradouro: quizStore.endereco?.logradouro || "N/A",
+        cliente_numero: quizStore.endereco?.numero || "S/N",
+        cliente_complemento: quizStore.endereco?.complemento || "",
+        cliente_bairro: quizStore.endereco?.bairro || "N/A",
+        cliente_cidade: quizStore.endereco?.cidade || "N/A",
+        cliente_estado: quizStore.endereco?.uf || "XX",
         registro: isAuthenticated ? undefined : {
           email: userDataForm.email,
           senha: userDataForm.senha,
@@ -225,10 +212,8 @@ export default function Quiz() {
         },
       });
 
-      // Salvar userData no store
       quizStore.setUserData(userDataForm);
 
-      // Redirecionar para recomendação
       quizStore.calcularCategoria();
       setLocation("/recommendation");
     } catch (error) {
@@ -239,21 +224,8 @@ export default function Quiz() {
     }
   };
 
-  const handleProxima = () => {
-    if (currentQuestionIndex < QUIZ_QUESTIONS.length) {
-      setCurrentQuestionIndex(currentQuestionIndex + 1);
-    }
-  };
-
-  const handleAnterior = () => {
-    if (currentQuestionIndex > 0) {
-      setCurrentQuestionIndex(currentQuestionIndex - 1);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-card">
-      {/* Header */}
       <header className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b border-border">
         <div className="container py-4">
           <div className="flex items-center justify-between mb-4">
@@ -281,50 +253,76 @@ export default function Quiz() {
                     <p className="text-muted-foreground">Preencha seus dados para começar o quiz.</p>
                  </div>
                  
-                 <div className="space-y-4">
-                    <Input placeholder="Nome completo" value={userDataForm.nome} onChange={(e) => setUserDataForm({...userDataForm, nome: e.target.value})} />
-                    <Input placeholder="Email" value={userDataForm.email} onChange={(e) => setUserDataForm({...userDataForm, email: e.target.value})} />
-                    <Input placeholder="WhatsApp" value={userDataForm.whatsapp} onChange={(e) => setUserDataForm({...userDataForm, whatsapp: e.target.value})} />
-                    {!isAuthenticated && (
-                       <Input type="password" placeholder="Senha" value={userDataForm.senha} onChange={(e) => setUserDataForm({...userDataForm, senha: e.target.value})} />
-                    )}
-                    
-                    <Button onClick={() => setEtapaFluxo("cep")} disabled={!userDataForm.nome || !userDataForm.email || !userDataForm.whatsapp || (!isAuthenticated && !userDataForm.senha)} className="w-full">
-                      Continuar
-                    </Button>
-                 </div>
+                 <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        setEtapaFluxo("cep");
+                      }}
+                      className="space-y-4"
+                    >
+                      <Input
+                        placeholder="Nome completo"
+                        value={userDataForm.nome}
+                        onChange={(e) =>
+                          setUserDataForm({ ...userDataForm, nome: e.target.value })
+                        }
+                        required
+                      />
+                      <Input
+                        placeholder="Email"
+                        value={userDataForm.email}
+                        onChange={(e) =>
+                          setUserDataForm({ ...userDataForm, email: e.target.value })
+                        }
+                        type="email"
+                        required
+                      />
+                      <Input
+                        placeholder="WhatsApp"
+                        value={userDataForm.whatsapp}
+                        onChange={(e) =>
+                          setUserDataForm({
+                            ...userDataForm,
+                            whatsapp: e.target.value,
+                          })
+                        }
+                        required
+                      />
+                      {!isAuthenticated && (
+                        <Input
+                          type="password"
+                          placeholder="Senha"
+                          value={userDataForm.senha}
+                          onChange={(e) =>
+                            setUserDataForm({ ...userDataForm, senha: e.target.value })
+                          }
+                          required
+                        />
+                      )}
+
+                      <Button
+                        type="submit"
+                        disabled={
+                          !userDataForm.nome ||
+                          !userDataForm.email ||
+                          !userDataForm.whatsapp ||
+                          (!isAuthenticated && !userDataForm.senha)
+                        }
+                        className="w-full"
+                      >
+                        Continuar
+                      </Button>
+                    </form>
                </div>
              </Card>
           ) : etapaFluxo === "cep" ? (
             <CepInput onComplete={() => setEtapaFluxo("quiz")} />
           ) : (
             <>
-              {/* Indicador de Etapa */}
-              <div className="mb-8">
-                <div className="flex items-center justify-between mb-4">
-                  {ETAPAS.slice(1).map((etapa, idx) => (
-                    <div key={etapa.numero} className="flex flex-col items-center flex-1">
-                      <div
-                        className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-white mb-2 transition-all ${
-                          etapa.numero <= etapaAtual + 1
-                            ? `bg-gradient-to-r ${etapa.cor}`
-                            : "bg-muted text-muted-foreground"
-                        }`}
-                      >
-                        {etapa.numero}
-                      </div>
-                      <span className="text-xs text-center text-muted-foreground hidden md:block">
-                        {etapa.titulo}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
 
-              {/* Card da Pergunta ou Formulário */}
+
               <Card className="p-8 mb-8 animate-fadeInUp">
                 {isFinalStep ? (
-                  // Tela de Finalização
                   <div className="space-y-6 text-center">
                     <h2 className="text-3xl font-bold text-foreground">Tudo pronto!</h2>
                     <p className="text-muted-foreground">Suas respostas foram registradas. Vamos gerar sua recomendação personalizada.</p>
@@ -333,61 +331,52 @@ export default function Quiz() {
                     </Button>
                   </div>
                 ) : (
-                  // Card da Pergunta
                   <>
-                    {/* ... (código existente da pergunta) ... */}
-                    {/* Título da Etapa */}
                     <div className="mb-6">
-                      <div className={`inline-block px-3 py-1 rounded-full text-sm font-semibold text-white bg-gradient-to-r ${etapaInfo.cor} mb-3`}>
-                        Etapa {etapaAtual} de 5
+                      <div className={`inline-block px-3 py-1 rounded-full text-sm font-semibold text-white bg-gradient-to-r from-blue-500 to-blue-600 mb-3`}>
+                        Etapa {quizStore.etapa_atual} de 5
                       </div>
                       <h2 className="text-3xl font-bold text-foreground mb-2">
-                        {currentQuestion.pergunta}
+                        {currentQuestion!.pergunta}
                       </h2>
-                      {currentQuestion.descricao && (
-                        <p className="text-muted-foreground">{currentQuestion.descricao}</p>
+                      {currentQuestion!.descricao && (
+                        <p className="text-muted-foreground">{currentQuestion!.descricao}</p>
                       )}
                     </div>
 
-                    {/* Renderizar por tipo de pergunta */}
                     <div className="space-y-4">
-                      {currentQuestion.tipo === "texto" && (
-                        <div>
+                      {currentQuestion!.tipo === "texto" && (
+                        <div className="space-y-4">
                           <Input
                             type="text"
                             placeholder="Digite sua resposta..."
-                            value={respostas[currentQuestion.id] || ""}
+                            value={(respostas[currentQuestion!.id] as string) || ""}
                             onChange={(e) => {
                               setRespostas({
                                 ...respostas,
-                                [currentQuestion.id]: e.target.value,
+                                [currentQuestion!.id]: e.target.value,
                               });
-                            }}
-                            onKeyPress={(e) => {
-                              if (e.key === "Enter" && respostas[currentQuestion.id]) {
-                                handleResposta(respostas[currentQuestion.id]);
-                              }
                             }}
                             className="text-lg py-3"
                           />
                           <Button
-                            onClick={() => handleResposta(respostas[currentQuestion.id])}
-                            disabled={!respostas[currentQuestion.id]}
-                            className="w-full mt-4"
+                            onClick={() => handleResposta(respostas[currentQuestion!.id] as string)}
+                            disabled={!respostas[currentQuestion!.id]}
+                            className="w-full"
                           >
                             Continuar
                           </Button>
                         </div>
                       )}
 
-                      {currentQuestion.tipo === "multipla" && (
+                      {currentQuestion!.tipo === "multipla" && (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {currentQuestion.opcoes?.map((opcao) => (
+                          {currentQuestion!.opcoes?.map((opcao) => (
                             <button
                               key={opcao.value}
                               onClick={() => handleResposta(opcao.value)}
                               className={`p-4 rounded-lg border-2 transition-all text-left font-medium ${
-                                respostas[currentQuestion.id] === opcao.value
+                                respostas[currentQuestion!.id] === opcao.value
                                   ? "border-accent bg-accent/10 text-accent"
                                   : "border-border hover:border-accent/50 text-foreground"
                               }`}
@@ -398,23 +387,23 @@ export default function Quiz() {
                         </div>
                       )}
 
-                      {currentQuestion.tipo === "escala" && (
+                      {currentQuestion!.tipo === "escala" && (
                         <div className="space-y-4">
                           <div className="flex justify-between text-sm text-muted-foreground mb-4">
-                            <span>{currentQuestion.escala?.min_label}</span>
-                            <span>{currentQuestion.escala?.max_label}</span>
+                            <span>{currentQuestion!.escala?.min_label}</span>
+                            <span>{currentQuestion!.escala?.max_label}</span>
                           </div>
                           <div className="flex gap-3 justify-center">
                             {Array.from({
-                              length: (currentQuestion.escala?.max || 5) - (currentQuestion.escala?.min || 1) + 1,
+                              length: (currentQuestion!.escala?.max || 5) - (currentQuestion!.escala?.min || 1) + 1,
                             }).map((_, idx) => {
-                              const valor = (currentQuestion.escala?.min || 1) + idx;
+                              const valor = (currentQuestion!.escala?.min || 1) + idx;
                               return (
                                 <button
                                   key={valor}
                                   onClick={() => handleResposta(valor)}
                                   className={`w-12 h-12 rounded-full font-bold transition-all ${
-                                    respostas[currentQuestion.id] === valor
+                                    respostas[currentQuestion!.id] === valor
                                       ? "bg-accent text-accent-foreground scale-110"
                                       : "bg-muted text-muted-foreground hover:bg-muted/80"
                                   }`}
@@ -427,35 +416,12 @@ export default function Quiz() {
                         </div>
                       )}
                     </div>
-
-                    {/* Indicador de Pergunta na Etapa */}
-                    <div className="mt-8 pt-6 border-t border-border text-center text-sm text-muted-foreground">
-                      Pergunta {questoesEtapa.findIndex((q) => q.id === currentQuestion.id) + 1} de {questoesEtapa.length} nesta etapa
-                    </div>
                   </>
                 )}
               </Card>
 
-              {/* Botões de Navegação */}
               {isQuizStep && (
                 <div className="flex gap-4">
-                  <Button
-                    variant="outline"
-                    onClick={handleAnterior}
-                    disabled={currentQuestionIndex === 0}
-                    className="flex-1"
-                  >
-                    <ChevronLeft className="w-4 h-4 mr-2" />
-                    Anterior
-                  </Button>
-                  <Button
-                    onClick={handleProxima}
-                    disabled={!respostas[currentQuestion.id] || isLoading}
-                    className="flex-1"
-                  >
-                    Próxima
-                    <ChevronRight className="w-4 h-4 ml-2" />
-                  </Button>
                 </div>
               )}
             </>

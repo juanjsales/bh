@@ -1,8 +1,9 @@
 import { eq } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/node-postgres";
-import { Pool } from "pg";
-import { InsertUtilizador, utilizadores } from "../drizzle/schema";
-import { ENV } from './_core/env';
+import { drizzle } from "drizzle-orm/mysql2";
+import { createPool } from "mysql2/promise";
+import { utilizadores } from "../drizzle/schema.ts";
+type InsertUtilizador = typeof utilizadores.$inferInsert;
+import { ENV } from './_core/env.ts';
 
 let _db: any = null;
 
@@ -10,12 +11,13 @@ export async function getDb() {
   if (!_db && ENV.databaseUrl) {
     try {
       console.log("[Database] Tentando conectar ao URL:", ENV.databaseUrl);
-      const pool = new Pool({ connectionString: ENV.databaseUrl });
+      const pool = createPool(ENV.databaseUrl);
       _db = drizzle(pool);
       
       console.log("[Database] Conexão estabelecida com sucesso!");
     } catch (error) {
       console.error("[Database] Falha ao conectar:", error);
+      console.error("[Database] Detalhes do erro:", JSON.stringify(error));
       _db = null;
     }
   }
@@ -36,17 +38,34 @@ export async function upsertUtilizador(user: InsertUtilizador): Promise<void> {
   try {
     const values: InsertUtilizador = {
       openId: user.openId,
-      nome_completo: user.nome_completo ?? null,
+      nomeCompleto: user.nomeCompleto ?? null,
       email: user.email ?? null,
       role: user.role ?? (user.openId === ENV.ownerOpenId ? 'admin' : 'cliente'),
+      telefone: user.telefone ?? null,
+      enderecoRua: user.enderecoRua ?? null,
+      enderecoNumero: user.enderecoNumero ?? null,
+      enderecoComplemento: user.enderecoComplemento ?? null,
+      enderecoBairro: user.enderecoBairro ?? null,
+      enderecoCidade: user.enderecoCidade ?? null,
+      enderecoEstado: user.enderecoEstado ?? null,
+      enderecoCep: user.enderecoCep ?? null,
+      senhaHash: user.senhaHash ?? undefined,
     };
 
-    await db.insert(utilizadores).values(values).onConflictDoUpdate({
-      target: utilizadores.openId,
+    await db.insert(utilizadores).values(values).onDuplicateKeyUpdate({
       set: {
-        nome_completo: values.nome_completo,
+        nomeCompleto: values.nomeCompleto,
         email: values.email,
         role: values.role,
+        telefone: values.telefone,
+        enderecoRua: values.enderecoRua,
+        enderecoNumero: values.enderecoNumero,
+        enderecoComplemento: values.enderecoComplemento,
+        enderecoBairro: values.enderecoBairro,
+        enderecoCidade: values.enderecoCidade,
+        enderecoEstado: values.enderecoEstado,
+        enderecoCep: values.enderecoCep,
+        senhaHash: values.senhaHash,
         updatedAt: new Date(),
       },
     });

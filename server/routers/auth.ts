@@ -30,11 +30,13 @@ export const authRouter = router({
 
       // DEBUG: Forçando o uso de um token no formato que o verifySession espera
       // A estrutura esperada pelo verifySession é: { openId, appId, name }
-      const sessionName = usuario.nome_completo || usuario.email || "Usuário";
+      const sessionName = usuario.nomeCompleto || usuario.email || "Usuário";
+      const appId = process.env.VITE_APP_ID || "box-health-app";
       const sessionToken = await sdk.createSessionToken(tokenOpenId, {
         name: sessionName,
       });
 
+      console.log(`[Auth] Token criado com:`, { openId: tokenOpenId, appId: appId, name: sessionName });
       console.log(`[Auth] Token gerado manualmente para openId: ${tokenOpenId}. Token: ${sessionToken}`);
       
       const cookieOptions = getSessionCookieOptions(ctx.req);

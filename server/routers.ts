@@ -6,7 +6,7 @@ import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import { v4 as uuidv4 } from "uuid";
 import { getDb } from "./db";
-import { perfisQuiz, pedidos, assinaturas, produtos, carrinho, utilizadores } from "../drizzle/schema";
+import { perfisQuiz, pedidos, assinaturas, produtos, carrinho, utilizadores, produtosAssinaturas, produtosAssinaturasPivot } from "../drizzle/schema";
 import { eq, and } from "drizzle-orm";
 import { notificarNovoPedido, notificarPagamentoConfirmado } from "./notificacoes";
 import { loginLocal, registerLocal } from "./services/authService";
@@ -24,7 +24,16 @@ export const appRouter = router({
   shipping: shippingRouter,
   
   auth: router({
-    me: publicProcedure.query(opts => opts.ctx.user),
+    me: publicProcedure.query(async ({ ctx }) => {
+      if (!ctx.user?.id) return null;
+
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
+      const userDetails = await db.select().from(utilizadores).where(eq(utilizadores.id, ctx.user.id)).limit(1);
+
+      return userDetails.length > 0 ? userDetails[0] : null;
+    }),
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
@@ -41,8 +50,9 @@ export const appRouter = router({
       )
       .mutation(async ({ input, ctx }) => {
         const usuario = await loginLocal(input.email, input.senha);
+        console.log("[DEBUG] Usuario retornado pelo loginLocal:", JSON.stringify(usuario, null, 2));
         const identifier = usuario.openId ?? `${usuario.id}`;
-        const sessionToken = await sdk.createSessionToken(identifier, { name: usuario.nome_completo || "" });
+        const sessionToken = await sdk.createSessionToken(identifier, { name: usuario.nome_completo || usuario.email || "Usuário" });
         const cookieOptions = getSessionCookieOptions(ctx.req);
         ctx.res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: 604800000 });
         return { success: true, user: usuario };
@@ -59,6 +69,44 @@ export const appRouter = router({
         await registerLocal(input.email, input.senha, input.nome_completo);
         return { success: true, message: "Conta criada com sucesso" };
       }),
+    atualizarPerfil: protectedProcedure
+      .input(
+        z.object({
+          nome_completo: z.string().optional(),
+          telefone: z.string().optional(),
+          enderecoCep: z.string().optional(),
+          enderecoRua: z.string().optional(),
+          enderecoNumero: z.string().optional(),
+          enderecoComplemento: z.string().optional(),
+          enderecoBairro: z.string().optional(),
+          enderecoCidade: z.string().optional(),
+          enderecoEstado: z.string().optional(),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user?.id) throw new Error("Unauthorized");
+
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
+
+        const updateData: Record<string, any> = {};
+        if (input.nome_completo !== undefined) updateData.nomeCompleto = input.nome_completo;
+        if (input.telefone !== undefined) updateData.telefone = input.telefone;
+        if (input.enderecoCep !== undefined) updateData.enderecoCep = input.enderecoCep;
+        if (input.enderecoRua !== undefined) updateData.enderecoRua = input.enderecoRua;
+        if (input.enderecoNumero !== undefined) updateData.enderecoNumero = input.enderecoNumero;
+        if (input.enderecoComplemento !== undefined) updateData.enderecoComplemento = input.enderecoComplemento;
+        if (input.enderecoBairro !== undefined) updateData.enderecoBairro = input.enderecoBairro;
+        if (input.enderecoCidade !== undefined) updateData.enderecoCidade = input.enderecoCidade;
+        if (input.enderecoEstado !== undefined) updateData.enderecoEstado = input.enderecoEstado;
+
+        await db
+          .update(utilizadores)
+          .set(updateData)
+          .where(eq(utilizadores.id, ctx.user.id));
+
+        return { success: true };
+      }),
   }),
 
   // Quiz routes
@@ -73,6 +121,12 @@ export const appRouter = router({
           cliente_nome: z.string().optional(),
           cliente_email: z.string().optional(),
           cliente_whatsapp: z.string().optional(),
+          cliente_logradouro: z.string().optional(),
+          cliente_numero: z.string().optional(),
+          cliente_complemento: z.string().optional(),
+          cliente_bairro: z.string().optional(),
+          cliente_cidade: z.string().optional(),
+          cliente_estado: z.string().optional(),
           cliente_cep: z.string().optional(),
           // Dados de registro (opcionais, apenas se usuário não logado)
           registro: z.object({
@@ -108,8 +162,9 @@ export const appRouter = router({
           
           // Criar sessão automaticamente
           const usuario = await loginLocal(input.registro.email, input.registro.senha);
+          console.log("[DEBUG] Usuario criado/retornado no Quiz:", JSON.stringify(usuario, null, 2));
           const identifier = usuario.openId ?? `${usuario.id}`;
-          const sessionToken = await sdk.createSessionToken(identifier, { name: usuario.nome_completo || "" });
+          const sessionToken = await sdk.createSessionToken(identifier, { name: usuario.nome_completo || usuario.email || "Usuário" });
           const cookieOptions = getSessionCookieOptions(ctx.req);
           ctx.res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: 604800000 });
         }
@@ -123,7 +178,13 @@ export const appRouter = router({
           input.cliente_nome,
           input.cliente_email,
           input.cliente_whatsapp,
-          input.cliente_cep
+          input.cliente_cep,
+          input.cliente_logradouro,
+          input.cliente_numero,
+          input.cliente_complemento,
+          input.cliente_bairro,
+          input.cliente_cidade,
+          input.cliente_estado
         );
         
         return { id: perfilId, success: true };
@@ -139,7 +200,7 @@ export const appRouter = router({
         .select()
         .from(perfisQuiz)
         .where(eq(perfisQuiz.utilizadorId, ctx.user.id))
-        .orderBy((t) => t.criadoEm)
+        .orderBy(perfisQuiz.criadoEm)
         .limit(1);
       
       return perfil.length > 0 ? perfil[0] : null;
@@ -154,10 +215,32 @@ export const appRouter = router({
       
       const prods = await db
         .select()
-        .from(produtos)
-        .where(eq(produtos.ativo, true));
+        .from(produtos);
       
-      return prods;
+      const prodsWithAssinaturas = await Promise.all(prods.map(async (prod) => {
+        const assinaturasDoProduto = await db
+          .select({
+            assinaturaId: produtosAssinaturasPivot.assinaturaId,
+            precoEspecifico: produtosAssinaturasPivot.precoEspecifico,
+            nomeAssinatura: produtosAssinaturas.nome,
+            duracaoMeses: produtosAssinaturas.duracaoMeses
+          })
+          .from(produtosAssinaturasPivot)
+          .innerJoin(produtosAssinaturas, eq(produtosAssinaturas.id, produtosAssinaturasPivot.assinaturaId))
+          .where(eq(produtosAssinaturasPivot.produtoId, prod.id));
+        
+        return { ...prod, assinaturas: assinaturasDoProduto };
+      }));
+      
+      return prodsWithAssinaturas;
+    }),
+
+    listarAssinaturas: publicProcedure.query(async () => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+      
+      const assinaturasList = await db.select().from(produtosAssinaturas);
+      return assinaturasList;
     }),
 
     obter: publicProcedure
@@ -184,6 +267,10 @@ export const appRouter = router({
           preco_assinatura: z.number().optional(),
           categoria: z.string().optional(),
           imagem_url: z.string().optional(),
+          precos_assinatura_especificos: z.array(z.object({
+            assinaturaId: z.string(),
+            precoEspecifico: z.number(),
+          })).optional(),
         })
       )
       .mutation(async ({ input, ctx }) => {
@@ -198,11 +285,21 @@ export const appRouter = router({
           id: prodId,
           nome: input.nome,
           descricao: input.descricao,
-          preco_avulso: input.preco_avulso.toString(),
-          preco_assinatura: input.preco_assinatura?.toString(),
+          precoAvulso: input.preco_avulso.toString(),
+          precoAssinatura: input.preco_assinatura?.toString(),
           categoria: input.categoria,
-          imagem_url: input.imagem_url,
+          imagemUrl: input.imagem_url,
         } as any);
+
+        if (input.precos_assinatura_especificos && input.precos_assinatura_especificos.length > 0) {
+          for (const p of input.precos_assinatura_especificos) {
+            await db.insert(produtosAssinaturasPivot).values({
+              produtoId: prodId,
+              assinaturaId: p.assinaturaId,
+              precoEspecifico: p.precoEspecifico.toString(),
+            });
+          }
+        }
         
         return { id: prodId, success: true };
       }),
@@ -211,12 +308,16 @@ export const appRouter = router({
       .input(
         z.object({
           id: z.string(),
-          nome: z.string(),
+          nome: z.string().optional(),
           descricao: z.string().optional(),
-          preco_avulso: z.number(),
+          preco_avulso: z.number().optional(),
           preco_assinatura: z.number().optional(),
           categoria: z.string().optional(),
           imagem_url: z.string().optional(),
+          precos_assinatura_especificos: z.array(z.object({
+            assinaturaId: z.string(),
+            precoEspecifico: z.number(),
+          })).optional(),
         })
       )
       .mutation(async ({ input, ctx }) => {
@@ -225,17 +326,33 @@ export const appRouter = router({
         const db = await getDb();
         if (!db) throw new Error("Database not available");
         
-        const { id, ...data } = input;
-        await db.update(produtos)
-          .set({
-            nome: data.nome,
-            descricao: data.descricao,
-            preco_avulso: data.preco_avulso.toString(),
-            preco_assinatura: data.preco_assinatura?.toString(),
-            categoria: data.categoria,
-            imagem_url: data.imagem_url,
-          } as any)
-          .where(eq(produtos.id, id));
+        const updateData: Record<string, any> = {};
+        if (input.nome !== undefined) updateData.nome = input.nome;
+        if (input.descricao !== undefined) updateData.descricao = input.descricao;
+        if (input.preco_avulso !== undefined) updateData.precoAvulso = input.preco_avulso.toString();
+        if (input.preco_assinatura !== undefined) updateData.precoAssinatura = input.preco_assinatura.toString();
+        if (input.categoria !== undefined) updateData.categoria = input.categoria;
+        if (input.imagem_url !== undefined) updateData.imagemUrl = input.imagem_url;
+        
+        await db
+          .update(produtos)
+          .set(updateData)
+          .where(eq(produtos.id, input.id));
+
+        if (input.precos_assinatura_especificos !== undefined) {
+          // Remover os antigos e inserir os novos
+          await db.delete(produtosAssinaturasPivot).where(eq(produtosAssinaturasPivot.produtoId, input.id));
+          
+          if (input.precos_assinatura_especificos.length > 0) {
+            for (const p of input.precos_assinatura_especificos) {
+              await db.insert(produtosAssinaturasPivot).values({
+                produtoId: input.id,
+                assinaturaId: p.assinaturaId,
+                precoEspecifico: p.precoEspecifico.toString(),
+              });
+            }
+          }
+        }
         
         return { success: true };
       }),
@@ -249,6 +366,39 @@ export const appRouter = router({
         if (!db) throw new Error("Database not available");
         
         await db.delete(produtos).where(eq(produtos.id, input.id));
+        
+        return { success: true };
+      }),
+  }),
+
+  // Utilizadores routes
+  utilizadores: router({
+    listar: protectedProcedure.query(async ({ ctx }) => {
+      if (ctx.user?.role !== "admin") throw new Error("Forbidden");
+      
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+      
+      return await db.select().from(utilizadores);
+    }),
+
+    atualizarRole: protectedProcedure
+      .input(
+        z.object({
+          id: z.number(),
+          role: z.enum(['cliente', 'admin']),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        if (ctx.user?.role !== "admin") throw new Error("Forbidden");
+        
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
+        
+        await db
+          .update(utilizadores)
+          .set({ role: input.role })
+          .where(eq(utilizadores.id, input.id));
         
         return { success: true };
       }),
@@ -322,8 +472,32 @@ export const appRouter = router({
       if (!db) throw new Error("Database not available");
       
       const meusPedidos = await db
-        .select()
+        .select({
+          id: pedidos.id,
+          utilizadorId: pedidos.utilizadorId,
+          produtoId: pedidos.produtoId,
+          produtoNome: produtos.nome,
+          produtoImagem: produtos.imagemUrl,
+          produtoDescricao: produtos.descricao,
+          produtoCategoria: produtos.categoria,
+          tipoCompra: pedidos.tipoCompra,
+          statusPagamento: pedidos.statusPagamento,
+          statusEnvio: pedidos.statusEnvio,
+          codigoRastreio: pedidos.codigoRastreio,
+          valorTotal: pedidos.valorTotal,
+          criadoEm: pedidos.criadoEm,
+          atualizadoEm: pedidos.atualizadoEm,
+          freteValor: pedidos.freteValor,
+          enderecoRua: pedidos.enderecoRua,
+          enderecoNumero: pedidos.enderecoNumero,
+          enderecoComplemento: pedidos.enderecoComplemento,
+          enderecoBairro: pedidos.enderecoBairro,
+          enderecoCidade: pedidos.enderecoCidade,
+          enderecoEstado: pedidos.enderecoEstado,
+          enderecoCep: pedidos.enderecoCep,
+        })
         .from(pedidos)
+        .leftJoin(produtos, eq(pedidos.produtoId, produtos.id))
         .where(eq(pedidos.utilizadorId, ctx.user.id));
       
       return meusPedidos;
@@ -340,12 +514,32 @@ export const appRouter = router({
       return todosPedidos;
     }),
 
-    atualizarStatus: protectedProcedure
+    atualizarStatusPagamento: protectedProcedure
       .input(
         z.object({
           pedido_id: z.string(),
-          status_pagamento: z.enum(["pendente", "pago", "cancelado"]).optional(),
-          status_envio: z.enum(["preparando", "enviado", "entregue"]).optional(),
+          status: z.enum(["pendente", "pago", "cancelado", "processando"]),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        if (ctx.user?.role !== "admin") throw new Error("Forbidden");
+        
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
+        
+        await db
+          .update(pedidos)
+          .set({ statusPagamento: input.status })
+          .where(eq(pedidos.id, input.pedido_id));
+        
+        return { success: true };
+      }),
+
+    atualizarStatusEnvio: protectedProcedure
+      .input(
+        z.object({
+          pedido_id: z.string(),
+          status: z.enum(["preparando", "enviado", "entregue"]),
           codigo_rastreio: z.string().optional(),
         })
       )
@@ -355,16 +549,40 @@ export const appRouter = router({
         const db = await getDb();
         if (!db) throw new Error("Database not available");
         
-        const updateData: Record<string, any> = {};
-        
-        if (input.status_pagamento) updateData.statusPagamento = input.status_pagamento;
-        if (input.status_envio) updateData.statusEnvio = input.status_envio;
+        const updateData: Record<string, any> = { statusEnvio: input.status };
         if (input.codigo_rastreio) updateData.codigoRastreio = input.codigo_rastreio;
         
         await db
           .update(pedidos)
           .set(updateData)
           .where(eq(pedidos.id, input.pedido_id));
+        
+        return { success: true };
+      }),
+
+    atualizarStatus: protectedProcedure
+      .input(
+        z.object({
+          pedido_id: z.string(),
+          novo_status: z.enum(["pendente", "pago", "cancelado", "processando"]),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
+        
+        // Verifica se o pedido pertence ao usuário
+        const pedido = await db.select().from(pedidos).where(and(eq(pedidos.id, input.pedido_id), eq(pedidos.utilizadorId, ctx.user!.id))).limit(1);
+        if (pedido.length === 0) throw new Error("Acesso negado");
+        
+        await db
+          .update(pedidos)
+          .set({ statusPagamento: input.novo_status as any })
+          .where(eq(pedidos.id, input.pedido_id));
+
+        if (input.novo_status === "pago") {
+          await notificarPagamentoConfirmado(input.pedido_id);
+        }
         
         return { success: true };
       }),
@@ -406,40 +624,75 @@ export const appRouter = router({
       if (!db) throw new Error("Database not available");
       
       const minhasAssinaturas = await db
-        .select()
+        .select({
+          id: assinaturas.id,
+          utilizadorId: assinaturas.utilizadorId,
+          produtoId: assinaturas.produtoId,
+          pedidoOrigemId: assinaturas.pedidoOrigemId,
+          status: assinaturas.status,
+          proximaCobranca: assinaturas.proximaCobranca,
+          criadaEm: assinaturas.criadaEm,
+          produtoNome: produtos.nome,
+        })
         .from(assinaturas)
+        .leftJoin(produtos, eq(assinaturas.produtoId, produtos.id))
         .where(eq(assinaturas.utilizadorId, ctx.user.id));
       
       return minhasAssinaturas;
     }),
 
-    atualizarStatus: protectedProcedure
-      .input(
-        z.object({
-          assinatura_id: z.string(),
-          status: z.enum(["ativa", "pausada", "cancelada"]),
+    obterTodos: protectedProcedure.query(async ({ ctx }) => {
+      if (ctx.user?.role !== "admin") throw new Error("Forbidden");
+      
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+      
+      const todasAssinaturas = await db
+        .select({
+          id: assinaturas.id,
+          utilizadorId: assinaturas.utilizadorId,
+          produtoId: assinaturas.produtoId,
+          pedidoOrigemId: assinaturas.pedidoOrigemId,
+          status: assinaturas.status,
+          proximaCobranca: assinaturas.proximaCobranca,
+          criadaEm: assinaturas.criadaEm,
+          clienteNome: utilizadores.nomeCompleto,
+          produtoNome: produtos.nome,
         })
-      )
+        .from(assinaturas)
+        .leftJoin(utilizadores, eq(assinaturas.utilizadorId, utilizadores.id))
+        .leftJoin(produtos, eq(assinaturas.produtoId, produtos.id));
+      
+      return todasAssinaturas;
+    }),
+
+    pausar: protectedProcedure
+      .input(z.object({ assinatura_id: z.string() }))
       .mutation(async ({ input, ctx }) => {
-        if (!ctx.user) throw new Error("Unauthorized");
+        if (ctx.user?.role !== "admin") throw new Error("Forbidden");
         
         const db = await getDb();
         if (!db) throw new Error("Database not available");
         
-        // Verificar se a assinatura pertence ao usuário
-        const assinatura = await db
-          .select()
-          .from(assinaturas)
-          .where(eq(assinaturas.id, input.assinatura_id))
-          .limit(1);
+        await db
+          .update(assinaturas)
+          .set({ status: "pausada" })
+          .where(eq(assinaturas.id, input.assinatura_id));
         
-        if (assinatura.length === 0 || assinatura[0].utilizadorId !== ctx.user.id) {
-          throw new Error("Forbidden");
-        }
+        return { success: true };
+      }),
+
+    cancelar: protectedProcedure
+      .input(z.object({ assinatura_id: z.string() }))
+      .mutation(async ({ input, ctx }) => {
+        if (ctx.user?.role !== "admin") throw new Error("Forbidden");
+        
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
         
         await db
           .update(assinaturas)
-          .set({ status: input.status })
+          .set({ status: "cancelada" })
           .where(eq(assinaturas.id, input.assinatura_id));
         
         return { success: true };
@@ -606,6 +859,7 @@ export const appRouter = router({
           produto_id: z.string(),
           quantidade: z.number().default(1),
           tipo_compra: z.enum(["avulsa", "assinatura"]).default("avulsa"),
+          assinatura_id: z.string().optional(),
         })
       )
       .mutation(async ({ input, ctx }) => {
@@ -645,6 +899,7 @@ export const appRouter = router({
           produtoId: input.produto_id,
           quantidade: input.quantidade,
           tipoCompra: input.tipo_compra,
+          // Se precisar salvar o assinatura_id no carrinho, adicione a coluna no schema e aqui
         } as any);
         
         return { id: itemId, success: true };

@@ -10,6 +10,8 @@ import { ProductSkeletonGrid } from "@/components/ProductSkeleton";
 export default function Landing() {
   const { isAuthenticated } = useAuth();
   const produtosQuery = trpc.produtos.listar.useQuery();
+  const assinaturasQuery = trpc.produtos.listarAssinaturas.useQuery();
+
 
   return (
     <div className="min-h-screen bg-background">
@@ -45,13 +47,14 @@ export default function Landing() {
       </header>
 
       {/* Hero Section */}
-      <section className="py-20 md:py-32 bg-gradient-to-b from-card to-background relative overflow-hidden">
+      <section className="py-32 md:py-48 bg-gradient-to-b from-card to-background relative overflow-hidden">
         {/* Background Image - Integrada no fundo */}
         <div className="absolute inset-0 pointer-events-none">
           <img
-            src="https://d2xsxph8kpxj0f.cloudfront.net/310519663492755131/Vruftkpt8c5NfqaQ9bJ7wu/banner-box-kraft-TGhScygmCN47jr2Dt8qDYM.webp"
+            src="/images/exbox.jpeg"
             alt="Box & Health"
-            className="absolute right-0 bottom-0 w-full md:w-2/3 lg:w-1/2 h-auto object-contain opacity-90"
+            className="absolute right-0 bottom-0 w-full md:w-2/3 lg:w-1/2 h-full object-cover object-center opacity-90"
+            style={{ inlineSize: '-webkit-fill-available' }}
             loading="lazy"
           />
         </div>
@@ -62,13 +65,6 @@ export default function Landing() {
         {/* Conteúdo */}
         <div className="container relative z-10">
           <div className="max-w-3xl mx-auto text-center animate-fadeInUp">
-            <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-6">
-              Sua Curadoria de Bem-estar Personalizada
-            </h2>
-            <p className="text-lg text-muted-foreground mb-8">
-              Descubra as caixas de rituais botânicos e místicos especialmente selecionadas para você. 
-              Cada box é uma jornada de bem-estar e autocuidado.
-            </p>
             {isAuthenticated ? (
               <Link href="/quiz">
                 <Button size="lg" className="text-lg px-8 py-6">
@@ -83,90 +79,6 @@ export default function Landing() {
               </Link>
             )}
           </div>
-        </div>
-      </section>
-
-      {/* Produtos Section - 4 Caixas com Imagens Centralizadas */}
-      <section className="py-16 md:py-24 bg-card">
-        <div className="container">
-          <h3 className="text-3xl font-bold text-center mb-12 text-foreground">
-            Nossas Caixas de Bem-estar
-          </h3>
-          
-          {produtosQuery.isLoading ? (
-            <ProductSkeletonGrid count={4} />
-          ) : (
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-7xl mx-auto">
-              {produtosQuery.data?.slice(0, 4).map((produto: any, index: number) => (
-                <Card key={produto.id} className="overflow-hidden hover:shadow-xl transition-shadow animate-fadeInUp" style={{ animationDelay: `${index * 100}ms` }}>
-                  {/* Imagem do Produto - Centralizada */}
-                  <div className="relative h-64 bg-muted overflow-hidden group flex items-center justify-center">
-                    {produto.imagem_url ? (
-                      <img
-                        src={produto.imagem_url}
-                        alt={produto.nome}
-                        className="h-full w-auto object-contain group-hover:scale-105 transition-transform duration-300"
-                        loading="lazy"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                        <Leaf className="w-12 h-12" />
-                      </div>
-                    )}
-                    {/* Badge de Categoria */}
-                    <div className="absolute top-4 right-4 bg-accent/90 text-accent-foreground px-3 py-1 rounded-full text-sm font-medium">
-                      {produto.categoria}
-                    </div>
-                  </div>
-
-                  {/* Conteúdo */}
-                  <div className="p-6">
-                    <h4 className="text-xl font-bold text-foreground mb-2">
-                      {produto.nome}
-                    </h4>
-                    <p className="text-sm text-muted-foreground mb-4 line-clamp-3">
-                      {produto.descricao}
-                    </p>
-
-                    {/* Preços */}
-                    <div className="space-y-2 mb-6">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-muted-foreground">Avulsa:</span>
-                        <span className="text-lg font-bold text-accent">
-                          R$ {produto.preco_avulso}
-                        </span>
-                      </div>
-                      {produto.preco_assinatura && (
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm text-muted-foreground">Assinatura:</span>
-                          <span className="text-lg font-bold text-accent">
-                            R$ {produto.preco_assinatura}
-                            <span className="text-xs text-muted-foreground ml-1">/mês</span>
-                          </span>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* CTA */}
-                    {isAuthenticated ? (
-                      <Link href="/loja">
-                        <Button className="w-full" size="sm">
-                          <ShoppingCart className="w-4 h-4 mr-2" />
-                          Adicionar à Loja
-                        </Button>
-                      </Link>
-                    ) : (
-                      <Link href="/quiz">
-                        <Button className="w-full" size="sm">
-                          Fazer Quiz para Começar
-                        </Button>
-                      </Link>
-                    )}
-                  </div>
-                </Card>
-              ))}
-            </div>
-          )}
         </div>
       </section>
 
@@ -226,161 +138,106 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Subscription Options Section - 3 Planos Centralizados */}
+      {/* Produtos Section - 4 Caixas com Imagens Centralizadas */}
       <section className="py-16 md:py-24 bg-card">
         <div className="container">
           <h3 className="text-3xl font-bold text-center mb-12 text-foreground">
-            Escolha seu Modelo de Assinatura
+            Nossas Caixas de Bem-estar
           </h3>
           
-          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            {/* Compra Avulsa Card */}
-            <Card className="p-8 relative">
-              <div className="flex items-start justify-between mb-6">
-                <div>
-                  <h4 className="text-2xl font-bold text-foreground mb-2">Compra Avulsa</h4>
-                  <p className="text-muted-foreground">Sem compromisso</p>
-                </div>
-              </div>
+          {produtosQuery.isLoading ? (
+            <ProductSkeletonGrid count={4} />
+          ) : (
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-7xl mx-auto">
+              {produtosQuery.data?.slice(0, 4).map((produto: any, index: number) => (
+                <Card key={produto.id} className="overflow-hidden hover:shadow-xl transition-shadow animate-fadeInUp" style={{ animationDelay: `${index * 100}ms` }}>
+                  {/* Imagem do Produto - Centralizada */}
+                  <div className="relative h-64 bg-muted overflow-hidden group flex items-center justify-center">
+                    {produto.imagem_url ? (
+                      <img
+                        src={produto.imagem_url}
+                        alt={produto.nome}
+                        className="h-full w-auto object-contain group-hover:scale-105 transition-transform duration-300"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                        <Leaf className="w-12 h-12" />
+                      </div>
+                    )}
+                    {/* Badge de Categoria */}
+                    <div className="absolute top-4 right-4 bg-accent/90 text-accent-foreground px-3 py-1 rounded-full text-sm font-medium">
+                      {produto.categoria}
+                    </div>
+                  </div>
 
-              <div className="space-y-4 mb-8">
-                <div className="flex items-center gap-3">
-                  <Check className="w-5 h-5 text-accent flex-shrink-0" />
-                  <span className="text-foreground">Compre quando quiser</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Check className="w-5 h-5 text-accent flex-shrink-0" />
-                  <span className="text-foreground">Sem compromisso</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Check className="w-5 h-5 text-accent flex-shrink-0" />
-                  <span className="text-foreground">Entrega rápida</span>
-                </div>
-              </div>
+                  {/* Conteúdo */}
+                  <div className="p-6">
+                    <h4 className="text-xl font-bold text-foreground mb-2">
+                      {produto.nome}
+                    </h4>
+                    <p className="text-sm text-muted-foreground mb-4 line-clamp-3">
+                      {produto.descricao}
+                    </p>
 
-              {isAuthenticated ? (
-                <Link href="/quiz">
-                  <Button className="w-full" variant="outline">
-                    Começar
-                  </Button>
-                </Link>
-              ) : (
-                <Link href="/quiz">
-                  <Button className="w-full" variant="outline">
-                    Começar
-                  </Button>
-                </Link>
-              )}
-            </Card>
+                    {/* Preços */}
+                    <div className="space-y-2 mb-6">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground">Avulsa:</span>
+                        <span className="text-lg font-bold text-accent">
+                          R$ {produto.precoAvulso}
+                        </span>
+                      </div>
+                      
+                      {produto.assinaturas && produto.assinaturas.length > 0 && (
+                        <div className="border-t pt-2 mt-2">
+                          <p className="text-xs font-semibold text-muted-foreground mb-1 uppercase tracking-wider">
+                            Planos de Assinatura:
+                          </p>
+                          {produto.assinaturas.map((assinatura: any) => (
+                            <div key={assinatura.assinaturaId} className="flex justify-between items-center text-sm">
+                              <span className="text-muted-foreground">{assinatura.nomeAssinatura} ({assinatura.duracaoMeses} meses)</span>
+                              <span className="font-semibold text-foreground">R$ {assinatura.precoEspecifico}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
 
-            {/* Assinatura Trimestral */}
-            <Card className="p-8 relative">
-              <div className="flex items-start justify-between mb-6">
-                <div>
-                  <h4 className="text-2xl font-bold text-foreground mb-2">Trimestral</h4>
-                  <p className="text-muted-foreground">Economize 10%</p>
-                </div>
-              </div>
-
-              <div className="space-y-4 mb-8">
-                <div className="flex items-center gap-3">
-                  <Check className="w-5 h-5 text-accent flex-shrink-0" />
-                  <span className="text-foreground">Desconto de 10%</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Check className="w-5 h-5 text-accent flex-shrink-0" />
-                  <span className="text-foreground">Entrega a cada 3 meses</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Check className="w-5 h-5 text-accent flex-shrink-0" />
-                  <span className="text-foreground">Cancele quando quiser</span>
-                </div>
-              </div>
-
-              {isAuthenticated ? (
-                <Link href="/quiz">
-                  <Button className="w-full" variant="outline">
-                    Começar
-                  </Button>
-                </Link>
-              ) : (
-                <Link href="/quiz">
-                  <Button className="w-full" variant="outline">
-                    Começar
-                  </Button>
-                </Link>
-              )}
-            </Card>
-
-            {/* Assinatura Mensal - Destaque */}
-            <Card className="p-8 relative border-2 border-accent bg-accent/5">
-              <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                <span className="bg-accent text-accent-foreground px-4 py-1 rounded-full text-sm font-semibold">
-                  Mais Popular
-                </span>
-              </div>
-
-              <div className="flex items-start justify-between mb-6">
-                <div>
-                  <h4 className="text-2xl font-bold text-foreground mb-2">Mensal</h4>
-                  <p className="text-muted-foreground">Economize 15%</p>
-                </div>
-              </div>
-
-              <div className="space-y-4 mb-8">
-                <div className="flex items-center gap-3">
-                  <Check className="w-5 h-5 text-accent flex-shrink-0" />
-                  <span className="text-foreground">Desconto de 15%</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Check className="w-5 h-5 text-accent flex-shrink-0" />
-                  <span className="text-foreground">Entrega mensal</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Check className="w-5 h-5 text-accent flex-shrink-0" />
-                  <span className="text-foreground">Prioridade</span>
-                </div>
-              </div>
-
-              {isAuthenticated ? (
-                <Link href="/quiz">
-                  <Button className="w-full">
-                    Começar Agora
-                  </Button>
-                </Link>
-              ) : (
-                <Link href="/quiz">
-                  <Button className="w-full">
-                    Começar Agora
-                  </Button>
-                </Link>
-              )}
-            </Card>
-          </div>
+                    {/* CTA */}
+                    <Link href={`/checkout`}>
+                      <Button className="w-full" size="sm">
+                        <ShoppingCart className="w-4 h-4 mr-2" />
+                        Comprar Agora
+                      </Button>
+                    </Link>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-16 md:py-24">
-        <div className="container text-center">
-          <h3 className="text-3xl font-bold mb-6 text-foreground">
-            Pronto para começar?
+      {/* Assinaturas Section */}
+      <section className="py-16 md:py-24 bg-card">
+        <div className="container">
+          <h3 className="text-3xl font-bold text-center mb-12 text-foreground">
+            Planos de Assinatura
           </h3>
-          <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Descubra qual box de bem-estar é perfeita para você. Leva apenas 5 minutos!
-          </p>
-          {isAuthenticated ? (
-            <Link href="/quiz">
-              <Button size="lg" className="text-lg px-8 py-6">
-                Fazer Quiz Agora
-              </Button>
-            </Link>
+          
+          {assinaturasQuery.isLoading ? (
+            <p className="text-center">Carregando planos...</p>
           ) : (
-            <Link href="/quiz">
-              <Button size="lg" className="text-lg px-8 py-6">
-                Fazer Quiz Agora
-              </Button>
-            </Link>
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+              {assinaturasQuery.data?.map((assinatura: any) => (
+                <Card key={assinatura.id} className="p-6">
+                  <h4 className="text-xl font-bold mb-2">{assinatura.nome}</h4>
+                  <p className="text-muted-foreground mb-4">{assinatura.descricao}</p>
+                  <p className="text-accent font-bold text-lg">R$ {assinatura.preco} / {assinatura.duracaoMeses} meses</p>
+                </Card>
+              ))}
+            </div>
           )}
         </div>
       </section>

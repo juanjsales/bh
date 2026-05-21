@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from "uuid";
 import { getDb } from "../db";
-import { pagamentosPix, pedidos } from "../../drizzle/schema";
+import { pagamentosPix, pedidos, produtos } from "../../drizzle/schema";
 import { eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 
@@ -58,15 +58,51 @@ export async function criarPagamentoPix(
 }
 
 /**
- * Obtém pagamento PIX por ID
+ * Obtém pagamento PIX por ID com detalhes do pedido e produto
  */
 export async function obterPagamentoPix(pagamentoId: string) {
   const db = await getDb();
   if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
 
   const pagamento = await db
-    .select()
+    .select({
+      id: pagamentosPix.id,
+      pedidoId: pagamentosPix.pedidoId,
+      utilizadorId: pagamentosPix.utilizadorId,
+      valor: pagamentosPix.valor,
+      chavePix: pagamentosPix.chavePix,
+      qrCodeBase64: pagamentosPix.qrCodeBase64,
+      status: pagamentosPix.status,
+      comprovanteUrl: pagamentosPix.comprovanteUrl,
+      motivoRejeicao: pagamentosPix.motivoRejeicao,
+      validadoPor: pagamentosPix.validadoPor,
+      criadoEm: pagamentosPix.criadoEm,
+      atualizadoEm: pagamentosPix.atualizadoEm,
+      expiraEm: pagamentosPix.expiraEm,
+      // Dados do Pedido
+      pedido: {
+        id: pedidos.id,
+        tipoCompra: pedidos.tipoCompra,
+        statusPagamento: pedidos.statusPagamento,
+        valorTotal: pedidos.valorTotal,
+        enderecoRua: pedidos.enderecoRua,
+        enderecoNumero: pedidos.enderecoNumero,
+        enderecoBairro: pedidos.enderecoBairro,
+        enderecoCidade: pedidos.enderecoCidade,
+        enderecoEstado: pedidos.enderecoEstado,
+        enderecoCep: pedidos.enderecoCep,
+      },
+      // Dados do Produto
+      produto: {
+        id: produtos.id,
+        nome: produtos.nome,
+        imagemUrl: produtos.imagemUrl,
+        categoria: produtos.categoria,
+      }
+    })
     .from(pagamentosPix)
+    .innerJoin(pedidos, eq(pagamentosPix.pedidoId, pedidos.id))
+    .leftJoin(produtos, eq(pedidos.produtoId, produtos.id))
     .where(eq(pagamentosPix.id, pagamentoId))
     .limit(1);
 

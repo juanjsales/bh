@@ -1,6 +1,6 @@
 import "dotenv/config";
 import { getDb } from "../server/db";
-import { utilizadores, produtos, assinaturas, pedidos, reviews } from "../drizzle/schema";
+import { utilizadores, produtos, pedidos, reviews } from "../drizzle/schema";
 import { v4 as uuidv4 } from "uuid";
 import bcrypt from "bcryptjs";
 import { eq } from "drizzle-orm";
@@ -14,94 +14,101 @@ async function seed() {
 
   console.log("[SEED] Iniciando seed...");
 
-  // Criar Usuário
+  // 1. Criar Usuário
   const senhaHash = await bcrypt.hash("123456", 10);
   let userId: number;
+  
   try {
     console.log("Inserindo usuário...");
+    // Usando ignore para evitar erro se rodar o seed duas vezes (email unique)
     await db.insert(utilizadores).values({
       nomeCompleto: "Juan Sales",
       email: "juan@exemplo.com",
       senhaHash: senhaHash,
       role: "cliente",
+      enderecoEstado: "SP",
+      enderecoCep: "01234567"
     });
+    
     const result = await db.select().from(utilizadores).where(eq(utilizadores.email, "juan@exemplo.com")).limit(1);
-    userId = result[0].id;
-    console.log("Usuário inserido com ID:", userId);
+    userId = result.id;
+    console.log("Usuário inserido/recuperado com ID:", userId);
   } catch (error) {
     console.error("Erro ao inserir usuário:", error);
     return;
   }
 
-  // Criar Produtos
+  // 2. Criar Produtos (Corrigido para usar os nomes das chaves do seu schema)
   const produtosExemplo = [
     {
       id: uuidv4(),
       nome: "Box Relaxamento Total",
       descricao: "Uma seleção de itens para desestressar após um longo dia.",
-      preco_avulso: "149.90",
+      precoAvulso: "149.90", // camelCase conforme seu schema
       categoria: "Relaxamento",
+      ativo: 1,
     },
     {
       id: uuidv4(),
       nome: "Box Foco e Produtividade",
       descricao: "Essenciais para aumentar sua concentração.",
-      preco_avulso: "129.90",
+      precoAvulso: "129.90",
       categoria: "Foco",
+      ativo: 1,
     },
     {
       id: uuidv4(),
       nome: "Box Energia Renovada",
       descricao: "Produtos para dar um boost na sua disposição.",
-      preco_avulso: "139.90",
+      precoAvulso: "139.90",
       categoria: "Energia",
+      ativo: 1,
     },
     {
       id: uuidv4(),
       nome: "Box Sono Profundo",
       descricao: "Itens selecionados para melhorar a qualidade do seu sono.",
-      preco_avulso: "159.90",
+      precoAvulso: "159.90",
       categoria: "Sono",
+      ativo: 1,
     },
   ];
 
   for (const p of produtosExemplo) {
     try {
-      console.log(`[SEED] Tentando inserir produto: ${p.nome}`);
       await db.insert(produtos).values(p);
-      console.log(`[SEED] Produto inserido com sucesso: ${p.nome}`);
+      console.log(`[SEED] Produto inserido: ${p.nome}`);
     } catch (error) {
       console.error(`[SEED] ERRO ao inserir produto: ${p.nome}`, error);
     }
   }
 
-  // Criar Pedidos e Reviews para os produtos
+  // 3. Criar Pedidos e Reviews (Corrigido para camelCase)
   for (const p of produtosExemplo) {
     const pedidoId = uuidv4();
     try {
-      console.log(`[SEED] Tentando inserir pedido para: ${p.nome}`);
       await db.insert(pedidos).values({
         id: pedidoId,
-        utilizador_id: userId,
-        produto_id: p.id,
-        tipo_compra: "avulsa",
-        status_pagamento: "pago",
-        valor_total: p.preco_avulso,
+        utilizadorId: userId, // Corrigido de utilizador_id
+        produtoId: p.id,      // Corrigido de produto_id
+        tipoCompra: "avulsa",
+        statusPagamento: "pago",
+        valorTotal: p.precoAvulso,
+        statusEnvio: "preparando"
       });
-      console.log(`[SEED] Pedido inserido com sucesso: ${pedidoId}`);
       
-      console.log(`[SEED] Tentando inserir review para: ${p.nome}`);
       await db.insert(reviews).values({
         id: uuidv4(),
-        utilizador_id: userId,
-        produto_id: p.id,
-        pedido_id: pedidoId,
+        utilizadorId: userId,
+        produtoId: p.id,
+        pedidoId: pedidoId,
         rating: 5,
         comentario: "Excelente produto, recomendo muito!",
+        moderado: 1,
       });
-      console.log(`[SEED] Review inserido com sucesso para produto: ${p.nome}`);
+      console.log(`[SEED] Pedido e Review criados para: ${p.nome}`);
     } catch (error) {
-      console.error(`[SEED] ERRO ao inserir pedido/review para: ${p.nome}`, error);
+      console.error(`[SEED] ERRO ao processar pedido/review para: ${p.nome}`, error);
     }
   }
 

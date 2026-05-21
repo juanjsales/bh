@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
-import { getDb } from "../db";
-import { utilizadores } from "../../drizzle/schema";
+import { getDb } from "../db.ts";
+import { utilizadores } from "../../drizzle/schema.ts";
 import { eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 

@@ -8,9 +8,13 @@ import Landing from "@/pages/Landing";
 import Quiz from "@/pages/Quiz";
 import Paywall from "@/pages/Paywall";
 import Dashboard from "@/pages/Dashboard";
-import Loja from "@/pages/Loja";
+import AdminDashboard from "@/pages/AdminDashboard";
 import AdminProdutos from "@/pages/AdminProdutos";
 import AdminPedidos from "@/pages/AdminPedidos";
+import AdminClientes from "@/pages/AdminClientes";
+import AdminAssinaturas from "@/pages/AdminAssinaturas";
+
+import Checkout from "@/pages/Checkout";
 import LoginRegister from "@/pages/LoginRegister";
 import Home from "@/pages/Home";
 import PagamentoPix from "@/pages/PagamentoPix";
@@ -26,10 +30,14 @@ function Router() {
       <Route path={"/quiz"} component={Quiz} />
       <Route path={"/paywall"} component={Paywall} />
       <Route path={"/dashboard"} component={Dashboard} />
-      <Route path={"/loja"} component={Loja} />
+      <Route path={"/admin"} component={AdminDashboard} />
       <Route path={"/admin/produtos"} component={AdminProdutos} />
       <Route path={"/admin/pedidos"} component={AdminPedidos} />
+      <Route path={"/admin/clientes"} component={AdminClientes} />
+      <Route path={"/admin/assinaturas"} component={AdminAssinaturas} />
+
       <Route path={"/pagamento-pix/:pagamentoId"} component={PagamentoPix} />
+      <Route path={"/checkout"} component={Checkout} />
       <Route path={"/perfil"} component={Perfil} />
       <Route path={"/recommendation"} component={Recommendation} />
       <Route path={"/404"} component={NotFound} />

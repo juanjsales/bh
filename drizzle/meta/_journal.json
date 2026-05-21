@@ -1,12 +1,18 @@
 {
   "version": "7",
-  "dialect": "postgresql",
   "entries": [
     {
       "idx": 0,
-      "version": "7",
-      "when": 1775415988158,
-      "tag": "0006_outstanding_gabe_jones",
+      "version": "5",
+      "when": 1775770501609,
+      "tag": "0000_hesitant_landau",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1775773823193,
+      "tag": "0001_normal_steel_serpent",
       "breakpoints": true
     }
   ]

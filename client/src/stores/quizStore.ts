@@ -10,6 +10,8 @@ export interface QuizResponse {
 export interface Endereco {
   cep: string;
   logradouro: string;
+  numero?: string;
+  complemento?: string;
   bairro: string;
   cidade: string;
   uf: string;
@@ -43,7 +45,7 @@ export interface QuizState {
   voltarEtapa: () => void;
   calcularCategoria: () => void;
   resetarQuiz: () => void;
-  obterRespostasJson: () => Record<string, any>;
+  obterRespostasJson: () => Record<string, unknown>;
 }
 
 export const useQuizStore = create<QuizState>((set, get) => ({
@@ -142,7 +144,7 @@ export const useQuizStore = create<QuizState>((set, get) => ({
   
   obterRespostasJson: () => {
     const state = get();
-    const respostasJson: Record<string, any> = {
+    const respostasJson: Record<string, unknown> = {
       endereco: state.endereco,
       userData: state.userData,
     };

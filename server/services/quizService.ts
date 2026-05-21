@@ -4,7 +4,7 @@
  */
 
 import { getDb } from "../db";
-import { perfisQuiz } from "../../drizzle/schema";
+import { perfisQuiz, utilizadores } from "../../drizzle/schema";
 import { eq } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
@@ -67,7 +67,13 @@ export async function salvarPerfilQuiz(
   cliente_nome?: string,
   cliente_email?: string,
   cliente_whatsapp?: string,
-  cliente_cep?: string
+  cliente_cep?: string,
+  cliente_logradouro?: string,
+  cliente_numero?: string,
+  cliente_complemento?: string,
+  cliente_bairro?: string,
+  cliente_cidade?: string,
+  cliente_estado?: string
 ): Promise<string> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -91,10 +97,35 @@ export async function salvarPerfilQuiz(
     clienteEmail: cliente_email,
     clienteWhatsapp: cliente_whatsapp,
     clienteCep: cliente_cep,
+    clienteLogradouro: cliente_logradouro,
+    clienteNumero: cliente_numero,
+    clienteComplemento: cliente_complemento,
+    clienteBairro: cliente_bairro,
+    clienteCidade: cliente_cidade,
+    clienteEstado: cliente_estado
   } as any);
+
+  // ... (código existente)
+  await db.update(utilizadores)
+      .set({
+          enderecoRua: cliente_logradouro,
+          enderecoNumero: cliente_numero,
+          enderecoComplemento: cliente_complemento,
+          enderecoBairro: cliente_bairro,
+          enderecoCidade: cliente_cidade,
+          enderecoEstado: cliente_estado,
+          enderecoCep: cliente_cep
+      })
+      .where(eq(utilizadores.id, utilizadorId));
+
+  console.log(`[QuizService] Sincronização concluída para usuário ${utilizadorId}:`, {
+      enderecoRua: cliente_logradouro,
+      enderecoCep: cliente_cep
+  });
 
   return perfilId;
 }
+// ... (código existente)
 
 /**
  * Obtém o perfil de quiz mais recente do usuário

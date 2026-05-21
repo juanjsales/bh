@@ -9,6 +9,7 @@ export default function CepInput({ onComplete }: { onComplete: () => void }) {
   const [cep, setCep] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const setEndereco = useQuizStore((state) => state.setEndereco);
+  const [endereco, setLocalEndereco] = useState<Endereco | null>(null);
 
   const handleBuscarCep = async () => {
     if (cep.length !== 8) {
@@ -26,20 +27,25 @@ export default function CepInput({ onComplete }: { onComplete: () => void }) {
         return;
       }
 
-      setEndereco({
+      setLocalEndereco({
         cep: data.cep,
         logradouro: data.logradouro,
         bairro: data.bairro,
         cidade: data.localidade,
         uf: data.uf,
       });
-      // Avança a etapa do quiz após completar o CEP
-      useQuizStore.getState().avancarEtapa();
-      onComplete();
     } catch (error) {
       toast.error("Erro ao buscar CEP");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleConfirmarEndereco = () => {
+    if (endereco) {
+        setEndereco(endereco);
+        useQuizStore.getState().avancarEtapa();
+        onComplete();
     }
   };
 
@@ -59,9 +65,21 @@ export default function CepInput({ onComplete }: { onComplete: () => void }) {
           disabled={isLoading || cep.length !== 8}
           className="w-full"
         >
-          {isLoading ? "Buscando..." : "Confirmar CEP"}
+          {isLoading ? "Buscando..." : "Buscar Endereço"}
         </Button>
       </div>
+      {endereco && (
+        <div className="space-y-4 mt-6 pt-6 border-t">
+          <h3 className="font-semibold text-lg">Confirme seu endereço</h3>
+          <Input value={endereco.logradouro} onChange={(e) => setLocalEndereco({...endereco, logradouro: e.target.value})} placeholder="Logradouro" />
+          <Input value={endereco.bairro} onChange={(e) => setLocalEndereco({...endereco, bairro: e.target.value})} placeholder="Bairro" />
+          <Input value={endereco.cidade} onChange={(e) => setLocalEndereco({...endereco, cidade: e.target.value})} placeholder="Cidade" />
+          <Input value={endereco.uf} onChange={(e) => setLocalEndereco({...endereco, uf: e.target.value})} placeholder="UF" />
+          <Input value={endereco.numero || ""} onChange={(e) => setLocalEndereco({...endereco, numero: e.target.value})} placeholder="Número" />
+          <Input value={endereco.complemento || ""} onChange={(e) => setLocalEndereco({...endereco, complemento: e.target.value})} placeholder="Complemento" />
+          <Button onClick={handleConfirmarEndereco} className="w-full">Confirmar Endereço</Button>
+        </div>
+      )}
     </Card>
   );
 }

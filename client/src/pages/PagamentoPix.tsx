@@ -15,10 +15,44 @@ export default function PagamentoPix() {
   const [tempoRestante, setTempoRestante] = useState<number>(30 * 60); // 30 minutos
   const [copiado, setCopiado] = useState(false);
 
-  const { data: pagamento, isLoading } = trpc.pix.obterPagamento.useQuery(
+  const { mutate: confirmarPagamento, isLoading: isConfirmandoPagamento } = trpc.pix.confirmarPagamento.useMutation({
+    onSuccess: () => {
+      toast.success("Pagamento marcado como 'processando'. O admin validará em breve.");
+      // Opcional: navegar ou recarregar para mostrar o status atualizado
+      // navigate("/dashboard");
+    },
+    onError: (error) => {
+      toast.error(`Erro ao confirmar pagamento: ${error.message}`);
+    },
+  });
+
+  const handleConfirmarPagamento = () => {
+    confirmarPagamento({ pagamento_id: pagamentoId });
+  };
+
+  const { data: pagamento, isLoading, refetch } = trpc.pix.obterPagamento.useQuery(
     { pagamento_id: pagamentoId },
     { enabled: !!pagamentoId }
   );
+
+  const { mutate: atualizarStatusPedido, isLoading: isAtualizandoStatus } = trpc.pedidos.atualizarStatus.useMutation({
+    onSuccess: () => {
+      toast.success("Pagamento confirmado com sucesso!");
+      refetch();
+    },
+    onError: (error) => {
+      toast.error(`Erro ao atualizar status: ${error.message}`);
+    },
+  });
+
+  const handleConfirmarPagamentoReal = () => {
+    if (pagamento?.pedidoId) {
+      atualizarStatusPedido({
+        pedido_id: pagamento.pedidoId,
+        novo_status: "processando",
+      });
+    }
+  };
 
   // Timer de expiracao
   useEffect(() => {
@@ -85,13 +119,35 @@ export default function PagamentoPix() {
     rejeitado: "bg-red-50 border-red-200",
   };
 
+  const pedido = pagamento.pedido;
+  const produto = pagamento.produto;
+
+  // Calcula total com frete
+  const valorProdutos = parseFloat(pagamento.valor);
+  const valorFrete = pedido?.freteValor ? parseFloat(pedido.freteValor as string) : 0;
+  const total = valorProdutos + valorFrete;
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-kraft-50 to-white py-12 px-4">
       <div className="max-w-2xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-kraft-900 mb-2">Pagamento PIX</h1>
-          <p className="text-kraft-600">Escaneie o QR Code ou copie a chave PIX</p>
+        {/* Header com dados do Pedido */}
+        <div className="mb-8 p-6 bg-white rounded-xl border border-kraft-200 shadow-sm">
+            <h1 className="text-2xl font-bold text-kraft-900">Pedido #{pagamento.pedidoId.slice(0, 8)}</h1>
+            {produto && <p className="text-kraft-600 font-medium">{produto.nome}</p>}
+            
+            <div className="mt-4 text-sm text-kraft-600">
+                <p>Produtos: <span className="font-semibold">R$ {valorProdutos.toFixed(2)}</span></p>
+                <p>Frete: <span className="font-semibold">R$ {valorFrete.toFixed(2)}</span></p>
+                <p className="text-lg font-bold text-kraft-900 mt-2">Total: R$ {total.toFixed(2)}</p>
+            </div>
+            
+            {pedido?.enderecoRua && (
+                <div className="mt-4 pt-4 border-t border-kraft-100 text-sm text-kraft-600">
+                    <p className="font-semibold text-kraft-800">Endereço de entrega:</p>
+                    <p>{pedido.enderecoRua}, {pedido.enderecoNumero} - {pedido.enderecoBairro}</p>
+                    <p>{pedido.enderecoCidade}/{pedido.enderecoEstado} - CEP: {pedido.enderecoCep}</p>
+                </div>
+            )}
         </div>
 
         {/* Card Principal */}
@@ -99,8 +155,8 @@ export default function PagamentoPix() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle>Valor a Pagar</CardTitle>
-                <CardDescription>R$ {dados.valor}</CardDescription>
+                <CardTitle>Pagamento PIX</CardTitle>
+                <CardDescription>Escaneie o QR Code ou copie a chave PIX</CardDescription>
               </div>
               <div className="text-right">
                 <div className="text-sm font-medium text-kraft-600">Status</div>
@@ -174,6 +230,17 @@ export default function PagamentoPix() {
               </ol>
             </div>
 
+            {/* Horário de Funcionamento */}
+            <div className="bg-kraft-50 p-4 rounded-lg border border-kraft-200 mt-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Clock className="h-4 w-4 text-kraft-800" />
+                <h3 className="font-semibold text-kraft-800">Horário de Atendimento</h3>
+              </div>
+              <p className="text-sm text-kraft-700">Segunda a Sexta-feira: 09:00 - 18:00</p>
+              <p className="text-sm text-kraft-700">Sábados: 09:00 - 13:00</p>
+              <p className="text-sm text-kraft-700">Domingos e Feriados: Fechado</p>
+            </div>
+
             {/* Status */}
             {pagamento.status === "confirmado" && (
               <Alert className="bg-green-50 border-green-200">
@@ -194,20 +261,33 @@ export default function PagamentoPix() {
             )}
 
             {/* Botões */}
-            <div className="flex gap-3 pt-4">
-              <Button
-                onClick={() => navigate("/dashboard")}
-                variant="outline"
-                className="flex-1 border-kraft-300"
-              >
-                Voltar ao Dashboard
-              </Button>
-              <Button
-                onClick={() => window.location.reload()}
-                className="flex-1 bg-kraft-700 hover:bg-kraft-800"
-              >
-                Atualizar Status
-              </Button>
+            <div className="flex flex-col gap-3 pt-4">
+              {pagamento.status === "pendente" && (
+                <Button
+                  onClick={handleConfirmarPagamentoReal}
+                  className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-6 text-lg"
+                  disabled={isAtualizandoStatus || expirado}
+                >
+                  {isAtualizandoStatus ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <CheckCircle2 className="mr-2 h-5 w-5" />}
+                  Já realizei o pagamento
+                </Button>
+              )}
+
+              <div className="flex gap-3">
+                <Button
+                  onClick={() => navigate("/dashboard")}
+                  variant="outline"
+                  className="flex-1 border-kraft-300"
+                >
+                  Voltar ao Dashboard
+                </Button>
+                <Button
+                  onClick={() => refetch()}
+                  className="flex-1 bg-kraft-700 hover:bg-kraft-800"
+                >
+                  Atualizar Status
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>

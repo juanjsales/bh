@@ -1,22 +1,41 @@
-import { useState } from "react";
+import { ADMIN_MENU_ITEMS } from "@/adminMenu";
+import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
-import { Link } from "wouter";
-import { ArrowLeft, CheckCircle, Clock, XCircle, Truck } from "lucide-react";
+import { useState } from "react";
 import { toast } from "sonner";
+import { Link } from "wouter";
+import { Truck, Package, CheckCircle, Save } from "lucide-react";
 
 type StatusPagamento = "pendente" | "pago" | "cancelado";
-type StatusEnvio = "nao_enviado" | "enviado" | "entregue" | "cancelado";
+type StatusEnvio = "preparando" | "enviado" | "entregue";
+
+const STATUS_PAGAMENTO_COLORS: Record<StatusPagamento, string> = {
+  pendente: "bg-yellow-500",
+  pago: "bg-green-500",
+  cancelado: "bg-red-500",
+};
+
+const STATUS_ENVIO_COLORS: Record<StatusEnvio, string> = {
+  preparando: "bg-blue-500",
+  enviado: "bg-yellow-500",
+  entregue: "bg-green-500",
+};
 
 export default function AdminPedidos() {
   const { user } = useAuth();
   const [filtroStatus, setFiltroStatus] = useState<StatusPagamento | "todos">("todos");
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [codigosRastreioTemp, setCodigosRastreioTemp] = useState<Record<string, string>>({});
 
   const pedidosQuery = trpc.pedidos.obterTodos.useQuery();
-  const atualizarStatusMutation = trpc.pedidos.atualizarStatus.useMutation();
+  const atualizarStatusPagamentoMutation = trpc.pedidos.atualizarStatusPagamento.useMutation();
+  const atualizarStatusEnvioMutation = trpc.pedidos.atualizarStatusEnvio.useMutation();
 
   if (user?.role !== "admin") {
     return (
@@ -31,16 +50,39 @@ export default function AdminPedidos() {
     );
   }
 
-  const handleAtualizarStatus = async (pedidoId: string, novoStatus: StatusPagamento) => {
+  const handleAtualizarPagamento = async (pedidoId: string, status: StatusPagamento) => {
     try {
-      await atualizarStatusMutation.mutateAsync({
+      await atualizarStatusPagamentoMutation.mutateAsync({
         pedido_id: pedidoId,
-        status_pagamento: novoStatus,
+        status,
       });
-      toast.success("Status atualizado com sucesso!");
+      toast.success("Status de pagamento atualizado!");
       pedidosQuery.refetch();
     } catch (error) {
-      toast.error("Erro ao atualizar status");
+      toast.error("Erro ao atualizar status de pagamento");
+    }
+  };
+
+  const handleAtualizarEnvio = async (pedidoId: string, status: StatusEnvio, codigoRastreio?: string) => {
+    try {
+      await atualizarStatusEnvioMutation.mutateAsync({
+        pedido_id: pedidoId,
+        status,
+        codigo_rastreio: codigoRastreio,
+      });
+      toast.success("Status de envio atualizado!");
+      pedidosQuery.refetch();
+    } catch (error) {
+      toast.error("Erro ao atualizar status de envio");
+    }
+  };
+
+  const handleSalvarRastreio = (pedidoId: string) => {
+    const codigoRastreio = codigosRastreioTemp[pedidoId];
+    // Precisa obter o status de envio atual do pedido
+    const pedido = pedidosQuery.data?.find(p => p.id === pedidoId);
+    if (pedido && codigoRastreio !== undefined) {
+      handleAtualizarEnvio(pedidoId, pedido.statusEnvio as StatusEnvio, codigoRastreio);
     }
   };
 
@@ -49,232 +91,82 @@ export default function AdminPedidos() {
     return pedido.statusPagamento === filtroStatus;
   });
 
-  const getStatusIcon = (status: StatusPagamento) => {
-    switch (status) {
-      case "pago":
-        return <CheckCircle className="w-5 h-5 text-green-600" />;
-      case "pendente":
-        return <Clock className="w-5 h-5 text-yellow-600" />;
-      case "cancelado":
-        return <XCircle className="w-5 h-5 text-red-600" />;
-    }
-  };
-
-  const getStatusColor = (status: StatusPagamento) => {
-    switch (status) {
-      case "pago":
-        return "bg-green-100 text-green-800";
-      case "pendente":
-        return "bg-yellow-100 text-yellow-800";
-      case "cancelado":
-        return "bg-red-100 text-red-800";
-    }
-  };
-
-  const getStatusLabel = (status: StatusPagamento) => {
-    switch (status) {
-      case "pago":
-        return "Pago";
-      case "pendente":
-        return "Pendente";
-      case "cancelado":
-        return "Cancelado";
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="bg-card border-b border-border sticky top-0 z-50">
-        <div className="container flex items-center justify-between h-16">
-          <Link href="/dashboard">
-            <Button variant="ghost" size="sm" className="flex items-center gap-2">
-              <ArrowLeft className="w-4 h-4" />
-              Voltar
-            </Button>
-          </Link>
-          <h1 className="text-2xl font-bold text-foreground">Gerenciar Pedidos</h1>
-          <div className="w-32" />
-        </div>
-      </header>
-
-      <main className="container py-8">
-        {/* Filtros */}
-        <div className="mb-8 flex gap-2 flex-wrap">
-          <Button
-            variant={filtroStatus === "todos" ? "default" : "outline"}
-            onClick={() => setFiltroStatus("todos")}
-            size="sm"
-          >
-            Todos ({pedidosQuery.data?.length || 0})
-          </Button>
-          <Button
-            variant={filtroStatus === "pendente" ? "default" : "outline"}
-            onClick={() => setFiltroStatus("pendente")}
-            size="sm"
-          >
-            Pendentes ({pedidosQuery.data?.filter((p: any) => p.statusPagamento === "pendente").length || 0})
-          </Button>
-          <Button
-            variant={filtroStatus === "pago" ? "default" : "outline"}
-            onClick={() => setFiltroStatus("pago")}
-            size="sm"
-          >
-            Pagos ({pedidosQuery.data?.filter((p: any) => p.statusPagamento === "pago").length || 0})
-          </Button>
-          <Button
-            variant={filtroStatus === "cancelado" ? "default" : "outline"}
-            onClick={() => setFiltroStatus("cancelado")}
-            size="sm"
-          >
-            Cancelados ({pedidosQuery.data?.filter((p: any) => p.statusPagamento === "cancelado").length || 0})
-          </Button>
-        </div>
-
-        {/* Pedidos List */}
-        <div>
-          {pedidosQuery.isLoading ? (
-            <p className="text-muted-foreground">Carregando pedidos...</p>
-          ) : pedidosFiltrados?.length === 0 ? (
-            <Card className="p-8 text-center">
-              <p className="text-muted-foreground">Nenhum pedido encontrado</p>
-            </Card>
-          ) : (
-            <div className="space-y-4">
-              {pedidosFiltrados?.map((pedido: any) => (
-                <Card
-                  key={pedido.id}
-                  className="p-6 cursor-pointer hover:shadow-lg transition-shadow"
-                  onClick={() => setExpandedId(expandedId === pedido.id ? null : pedido.id)}
-                >
-                  {/* Header do Pedido */}
-                  <div className="grid md:grid-cols-5 gap-4 items-center">
-                    <div>
-                      <p className="text-sm text-muted-foreground">ID do Pedido</p>
-                      <p className="font-mono text-sm font-bold text-foreground">
-                        {pedido.id.substring(0, 8)}...
-                      </p>
+    <DashboardLayout menuItems={ADMIN_MENU_ITEMS}>
+      <h1 className="text-2xl font-bold text-foreground mb-8">Gerenciar Pedidos</h1>
+      
+      <div className="space-y-4">
+        {pedidosQuery.isLoading ? (
+          <p className="text-muted-foreground">Carregando pedidos...</p>
+        ) : (
+          pedidosFiltrados?.map((pedido: any) => (
+            <Card key={pedido.id} className="p-6">
+              <div className="flex justify-between items-center cursor-pointer" onClick={() => setExpandedId(expandedId === pedido.id ? null : pedido.id)}>
+                <div>
+                  <p className="font-mono font-bold">{pedido.id.substring(0, 8)}...</p>
+                  <div className="flex gap-2 mt-1">
+                    <Badge variant="outline">{pedido.statusPagamento}</Badge>
+                    <Badge className={STATUS_ENVIO_COLORS[pedido.statusEnvio as StatusEnvio] || "bg-gray-500"}>{pedido.statusEnvio || "preparando"}</Badge>
+                  </div>
+                </div>
+                <Button variant="ghost" size="sm">
+                  {expandedId === pedido.id ? "Ocultar" : "Detalhes"}
+                </Button>
+              </div>
+              {expandedId === pedido.id && (
+                <div className="mt-4 pt-4 border-t space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Status do Pagamento:</label>
+                      <Select
+                        defaultValue={pedido.statusPagamento || "pendente"}
+                        onValueChange={(value: StatusPagamento) => handleAtualizarPagamento(pedido.id, value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="pendente">Pendente</SelectItem>
+                          <SelectItem value="pago">Pago</SelectItem>
+                          <SelectItem value="cancelado">Cancelado</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
 
-                    <div>
-                      <p className="text-sm text-muted-foreground">Cliente</p>
-                      <p className="font-medium text-foreground">{pedido.utilizador?.nome_completo || "N/A"}</p>
-                    </div>
-
-                    <div>
-                      <p className="text-sm text-muted-foreground">Valor</p>
-                      <p className="font-bold text-accent">R$ {parseFloat(pedido.valorTotal).toFixed(2)}</p>
-                    </div>
-
-                    <div>
-                      <p className="text-sm text-muted-foreground">Status</p>
-                      <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(pedido.statusPagamento)}`}>
-                        {getStatusIcon(pedido.statusPagamento)}
-                        {getStatusLabel(pedido.statusPagamento)}
-                      </div>
-                    </div>
-
-                    <div className="text-right">
-                      <p className="text-sm text-muted-foreground">Data</p>
-                      <p className="text-sm text-foreground">
-                        {new Date(pedido.criadoEm).toLocaleDateString("pt-BR")}
-                      </p>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Status do Envio:</label>
+                      <Select
+                        defaultValue={pedido.statusEnvio || "preparando"}
+                        onValueChange={(value: StatusEnvio) => handleAtualizarEnvio(pedido.id, value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="preparando"><Package className="inline mr-2 h-4 w-4" />Preparando</SelectItem>
+                          <SelectItem value="enviado"><Truck className="inline mr-2 h-4 w-4" />Enviado</SelectItem>
+                          <SelectItem value="entregue"><CheckCircle className="inline mr-2 h-4 w-4" />Entregue</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
-
-                  {/* Detalhes Expandidos */}
-                  {expandedId === pedido.id && (
-                    <div className="mt-6 pt-6 border-t border-border space-y-4">
-                      <div className="grid md:grid-cols-2 gap-6">
-                        {/* Informações do Pedido */}
-                        <div>
-                          <h4 className="font-semibold text-foreground mb-3">Informações do Pedido</h4>
-                          <div className="space-y-2 text-sm">
-                            <div>
-                              <span className="text-muted-foreground">Tipo de Compra:</span>
-                              <p className="font-medium text-foreground capitalize">
-                                {pedido.tipoCompra === "avulsa" ? "Avulsa" : "Assinatura"}
-                              </p>
-                            </div>
-                            <div>
-                              <span className="text-muted-foreground">Produto:</span>
-                              <p className="font-medium text-foreground">{pedido.produto?.nome || "N/A"}</p>
-                            </div>
-                            <div>
-                              <span className="text-muted-foreground">Criado em:</span>
-                              <p className="font-medium text-foreground">
-                                {new Date(pedido.criadoEm).toLocaleString("pt-BR")}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Informações do Cliente */}
-                        <div>
-                          <h4 className="font-semibold text-foreground mb-3">Informações do Cliente</h4>
-                          <div className="space-y-2 text-sm">
-                            <div>
-                              <span className="text-muted-foreground">Email:</span>
-                              <p className="font-medium text-foreground">{pedido.utilizador?.email || "N/A"}</p>
-                            </div>
-                            <div>
-                              <span className="text-muted-foreground">Telefone:</span>
-                              <p className="font-medium text-foreground">{pedido.utilizador?.telefone || "N/A"}</p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Ações de Status */}
-                      <div className="pt-4 border-t border-border">
-                        <h4 className="font-semibold text-foreground mb-3">Atualizar Status de Pagamento</h4>
-                        <div className="flex gap-2 flex-wrap">
-                          <Button
-                            variant={pedido.statusPagamento === "pendente" ? "default" : "outline"}
-                            size="sm"
-                            onClick={(e) => {
-                e.stopPropagation();
-                handleAtualizarStatus(pedido.id, "pendente");
-              }}
-                            disabled={atualizarStatusMutation.isPending}
-                          >
-                            <Clock className="w-4 h-4 mr-2" />
-                            Pendente
-                          </Button>
-                          <Button
-                            variant={pedido.statusPagamento === "pago" ? "default" : "outline"}
-                            size="sm"
-                            onClick={(e) => {
-                e.stopPropagation();
-                handleAtualizarStatus(pedido.id, "pago");
-              }}
-                            disabled={atualizarStatusMutation.isPending}
-                          >
-                            <CheckCircle className="w-4 h-4 mr-2" />
-                            Marcar como Pago
-                          </Button>
-                          <Button
-                            variant={pedido.statusPagamento === "cancelado" ? "default" : "outline"}
-                            size="sm"
-                            onClick={(e) => {
-                e.stopPropagation();
-                handleAtualizarStatus(pedido.id, "cancelado");
-              }}
-                            disabled={atualizarStatusMutation.isPending}
-                          >
-                            <XCircle className="w-4 h-4 mr-2" />
-                            Cancelar
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </Card>
-              ))}
-            </div>
-          )}
-        </div>
-      </main>
-    </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <Input 
+                      placeholder="Código de Rastreio" 
+                      defaultValue={pedido.codigoRastreio || ""}
+                      onChange={(e) => setCodigosRastreioTemp({...codigosRastreioTemp, [pedido.id]: e.target.value})}
+                    />
+                    <Button size="sm" onClick={() => handleSalvarRastreio(pedido.id)}>
+                      <Save className="mr-2 h-4 w-4" /> Salvar Rastreio
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </Card>
+          ))
+        )}
+      </div>
+    </DashboardLayout>
   );
 }

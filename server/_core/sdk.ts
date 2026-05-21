@@ -211,12 +211,19 @@ class SDKServer {
         algorithms: ["HS256"],
       });
       const { openId, appId, name } = payload as Record<string, unknown>;
+      console.log("[Auth] Token decodificado:", { openId, appId, name });
 
       if (
         !isNonEmptyString(openId) ||
         !isNonEmptyString(appId) ||
         !isNonEmptyString(name)
       ) {
+        console.warn("[Auth] Sessão inválida - campos faltando. Payload recebido:", payload);
+        const missing = [];
+        if (!isNonEmptyString(openId)) missing.push("openId");
+        if (!isNonEmptyString(appId)) missing.push("appId");
+        if (!isNonEmptyString(name)) missing.push("name");
+        console.warn("[Auth] Campos ausentes:", missing);
         return null;
       }
 
@@ -226,6 +233,7 @@ class SDKServer {
         name,
       };
     } catch (error) {
+      console.error("[Auth] Falha na verificação do token JWT:", error);
       return null;
     }
   }

@@ -32,7 +32,7 @@ export function ManusDialog({
     if (!onOpenChange) {
       setInternalOpen(open);
     }
-  }, [open, onOpenChange]);
+  }, [open]);
 
   const handleOpenChange = (nextOpen: boolean) => {
     if (onOpenChange) {
